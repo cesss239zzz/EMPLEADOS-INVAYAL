@@ -75,8 +75,14 @@ public sealed class ServicioColaboradores : IServicioColaboradores
                 || EF.Functions.Like(c.Identidad, patron));
         }
 
-        var filas = await consulta
-            .OrderBy(c => c.PrimerApellido).ThenBy(c => c.PrimerNombre)
+        var ordenada = consulta
+            .OrderBy(c => c.PrimerApellido).ThenBy(c => c.PrimerNombre);
+
+        // El tope viaja como LIMIT. Traer todo y quedarse con los primeros seria
+        // exactamente lo que prohibe la regla 13.
+        var acotada = filtro.Tope is > 0 ? ordenada.Take(filtro.Tope.Value) : ordenada.AsQueryable();
+
+        var filas = await acotada
             .Select(c => new
             {
                 c.Id,

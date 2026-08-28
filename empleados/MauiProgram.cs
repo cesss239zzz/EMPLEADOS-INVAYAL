@@ -180,6 +180,8 @@ public static class MauiProgram
         servicios.AddTransient<IServicioEmpresas, ServicioEmpresas>();
         servicios.AddTransient<IServicioColaboradores, ServicioColaboradores>();
         servicios.AddTransient<IServicioFicha, ServicioFicha>();
+        servicios.AddTransient<IServicioResumen, ServicioResumen>();
+        servicios.AddTransient<IServicioAlertas, ServicioAlertas>();
 
         // Contenedor de navegacion.
         servicios.AddSingleton<AppShell>();

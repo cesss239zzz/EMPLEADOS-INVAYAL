@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Directorio de colaboradores: filtros arriba y tabla de expedientes debajo.
+    Es la pantalla intermedia entre el resumen y la ficha, y usa el mismo
+    lenguaje visual que las dos: tarjeta blanca, borde de 1px y cabecera de
+    columnas en mayusculas.
+
+    Todo filtro viaja a SQL. Nada se filtra en memoria (CLAUDE.md, regla 13).
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:srv="clr-namespace:empleados.Servicios"
+             x:Class="empleados.Vistas.Paneles.PanelColaboradores"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="32,26,32,32" RowSpacing="20">
+
+        <!-- ═══ CABECERA ═══ -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloSeccion}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <Border Grid.Column="1"
+                    BackgroundColor="{StaticResource Accion}"
+                    StrokeThickness="0"
+                    Padding="16,0"
+                    HeightRequest="42"
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4" />
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Nuevo registro" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
+                    <Path Data="M10,4 V16 M4,10 H16"
+                          Stroke="{StaticResource PincelBlanco}"
+                          StrokeThickness="1.8"
+                          WidthRequest="18" HeightRequest="18"
+                          VerticalOptions="Center" />
+                    <Label Text="Nuevo colaborador"
+                           FontFamily="{StaticResource FuenteTexto}"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="#FFFFFF"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- ═══ FILTROS ═══
+             El buscador de texto vive en la barra superior. Aca van solo los
+             desplegables, que consultan al primer clic. -->
+        <Border Grid.Row="1" Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="20,14">
+            <Grid ColumnDefinitions="Auto,210,Auto,210,Auto,190,*,Auto" ColumnSpacing="10">
+
+                <Label Grid.Column="0" Text="Departamento"
+                       Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                <Border Grid.Column="1" Stroke="{StaticResource LineaFuerte}"
+                        StrokeThickness="1" Padding="8,0" BackgroundColor="{StaticResource Superficie}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="4" />
+                    </Border.StrokeShape>
+                    <Picker ItemsSource="{Binding Departamentos}"
+                            ItemDisplayBinding="{Binding Nombre}"
+                            SelectedItem="{Binding DepartamentoSeleccionado}"
+                            FontSize="13"
+                            TextColor="{StaticResource Texto}"
+                            BackgroundColor="Transparent"
+                            HeightRequest="34" />
+                </Border>
+
+                <Label Grid.Column="2" Text="Sucursal"
+                       Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                <Border Grid.Column="3" Stroke="{StaticResource LineaFuerte}"
+                        StrokeThickness="1" Padding="8,0" BackgroundColor="{StaticResource Superficie}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="4" />
+                    </Border.StrokeShape>
+                    <Picker ItemsSource="{Binding Sucursales}"
+                            ItemDisplayBinding="{Binding Nombre}"
+                            SelectedItem="{Binding SucursalSeleccionada}"
+                            FontSize="13"
+                            TextColor="{StaticResource Texto}"
+                            BackgroundColor="Transparent"
+                            HeightRequest="34" />
+                </Border>
+
+                <Label Grid.Column="4" Text="Estado"
+                       Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                <Border Grid.Column="5" Stroke="{StaticResource LineaFuerte}"
+                        StrokeThickness="1" Padding="8,0" BackgroundColor="{StaticResource Superficie}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="4" />
+                    </Border.StrokeShape>
+                    <Picker ItemsSource="{Binding Estados}"
+                            ItemDisplayBinding="{Binding Nombre}"
+                            SelectedItem="{Binding EstadoSeleccionado}"
+                            FontSize="13"
+                            TextColor="{StaticResource Texto}"
+                            BackgroundColor="Transparent"
+                            HeightRequest="34" />
+                </Border>
+
+                <Button Grid.Column="7"
+                        Text="Limpiar filtros"
+                        Style="{StaticResource BotonSecundario}"
+                        FontSize="13"
+                        Command="{Binding LimpiarFiltrosCommand}"
+                        IsEnabled="{Binding NoEstaOcupado}"
+                        IsVisible="{Binding HayFiltros}"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- ═══ TABLA ═══ -->
+        <Border Grid.Row="2" Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6">
+            <Grid RowDefinitions="Auto,Auto,*">
+
+                <Grid Grid.Row="0" Padding="22,18" ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" Text="Expedientes del personal"
+                           Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="{Binding ResumenConteo}"
+                           Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                </Grid>
+
+                <!--
+                    Anchos fijos, no proporcionales. Dentro de un CollectionView
+                    las columnas con estrella se miden contra el contenido y no
+                    contra el ancho disponible: la tabla crecia mas que el panel
+                    y desalineaba la cabecera. Con anchos fijos, cabecera y filas
+                    comparten la misma reticula.
+                -->
+                <Grid Grid.Row="1" Padding="22,10"
+                      BackgroundColor="{StaticResource SuperficieSuave}"
+                      ColumnDefinitions="3,250,150,150,120,96,110,90">
+                    <Label Grid.Column="1" Text="Colaborador" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Grid.Column="2" Text="Puesto" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Grid.Column="3" Text="Departamento" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Grid.Column="4" Text="Sucursal" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Grid.Column="5" Text="Ingreso" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Grid.Column="6" Text="Salario" Style="{StaticResource EtiquetaCampo}"
+                           HorizontalTextAlignment="End" Margin="0,0,12,0" />
+                    <Label Grid.Column="7" Text="Estado" Style="{StaticResource EtiquetaCampo}" />
+                </Grid>
+                <BoxView Grid.Row="1" Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
+
+                <CollectionView Grid.Row="2" ItemsSource="{Binding Colaboradores}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="srv:FilaColaborador">
+                            <Grid>
+                                <Grid ColumnDefinitions="3,250,150,150,120,96,110,90"
+                                      Padding="22,0"
+                                      HeightRequest="58"
+                                      BackgroundColor="Transparent">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=AbrirFichaCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid.GestureRecognizers>
+
+                                    <!-- Filo izquierdo segun completitud del expediente -->
+                                    <BoxView Grid.Column="0"
+                                             Color="{Binding Expediente, Converter={StaticResource ColorExpediente}}"
+                                             Margin="-22,0,0,0" />
+
+                                    <Grid Grid.Column="1" ColumnDefinitions="36,*" ColumnSpacing="11">
+                                        <Border Grid.Column="0"
+                                                BackgroundColor="{StaticResource AzulClaro}"
+                                                StrokeThickness="0"
+                                                WidthRequest="36" HeightRequest="36" Padding="0"
+                                                VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="18" />
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding Iniciales}"
+                                                   FontFamily="{StaticResource FuenteTitular}"
+                                                   FontSize="12.5"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource Accion}"
+                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <Label Text="{Binding NombreCompleto}"
+                                                   Style="{StaticResource Cuerpo}"
+                                                   LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding Identidad}"
+                                                   Style="{StaticResource DatoSuave}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+
+                                    <Label Grid.Column="2" Text="{Binding Puesto}"
+                                           Style="{StaticResource CuerpoMenor}"
+                                           TextColor="{StaticResource Texto}"
+                                           VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                    <Label Grid.Column="3" Text="{Binding Departamento}"
+                                           Style="{StaticResource CuerpoMenor}"
+                                           VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                    <Label Grid.Column="4" Text="{Binding Sucursal}"
+                                           Style="{StaticResource CuerpoMenor}"
+                                           VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                    <Label Grid.Column="5" Text="{Binding FechaIngresoTexto}"
+                                           Style="{StaticResource Dato}" VerticalOptions="Center" />
+                                    <Label Grid.Column="6" Text="{Binding SalarioTexto}"
+                                           Style="{StaticResource Dato}" VerticalOptions="Center"
+                                           HorizontalTextAlignment="End" Margin="0,0,12,0" />
+
+                                    <Border Grid.Column="7"
+                                            BackgroundColor="{Binding Estado, Converter={StaticResource FondoEstado}}"
+                                            StrokeThickness="0"
+                                            Padding="10,4"
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding EstadoTexto}"
+                                               FontFamily="{StaticResource FuenteTexto}"
+                                               FontSize="11"
+                                               FontAttributes="Bold"
+                                               TextColor="{Binding Estado, Converter={StaticResource ColorEstado}}" />
+                                    </Border>
+                                </Grid>
+                                <BoxView Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Lista vacia: se dice, no se deja el panel en blanco -->
+                <VerticalStackLayout Grid.Row="2"
+                                     IsVisible="{Binding SinResultados}"
+                                     Padding="22,30"
+                                     Spacing="6">
+                    <Label Text="Sin resultados" Style="{StaticResource TituloSeccion}"
+                           TextColor="{StaticResource AceroSuave}" />
+                    <Label Style="{StaticResource CuerpoSuave}"
+                           Text="Ningun colaborador de esta empresa cumple los criterios de busqueda." />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentView>
