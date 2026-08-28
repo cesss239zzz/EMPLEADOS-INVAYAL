@@ -1,695 +1,472 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Contenedor de SIGEM: menu lateral fijo a la izquierda, barra superior con el
+    buscador y area de contenido. Sigue la maqueta "Dashboard Administrativo":
+    menu de 248px sobre azul casi negro, cabecera blanca de 64px y lienzo gris.
+
+    Aca no vive ninguna pantalla. Cada una es un panel aparte, en Vistas/Paneles,
+    y hereda el BindingContext de esta pagina.
+-->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:empleados.VistaModelos"
-             xmlns:srv="clr-namespace:empleados.Servicios"
-             xmlns:v="clr-namespace:empleados.Vistas"
+             xmlns:p="clr-namespace:empleados.Vistas.Paneles"
              x:Class="empleados.Vistas.PaginaPrincipal"
              x:DataType="vm:VistaModeloPrincipal"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource Papel}"
-             Title="RH Manager">
+             Title="SIGEM">
 
-    <ContentPage.Resources>
-        <v:ConvertidorColorExpediente x:Key="ColorExpediente" />
-        <v:ConvertidorColorEstado x:Key="ColorEstado" />
-        <v:ConvertidorFondoEstado x:Key="FondoEstado" />
-        <v:ConvertidorFondoPestana x:Key="FondoPestana" />
-        <v:ConvertidorTextoPestana x:Key="TextoPestana" />
-        <v:ConvertidorColorPunto x:Key="ColorPunto" />
-    </ContentPage.Resources>
+    <Grid ColumnDefinitions="248,*">
 
-    <Grid RowDefinitions="58,3,*">
+        <!-- ═══════════════════════ MENU LATERAL ═══════════════════════ -->
+        <Grid Grid.Column="0"
+              BackgroundColor="{StaticResource Tinta2}"
+              RowDefinitions="Auto,*,Auto">
 
-        <!-- ═══ BARRA SUPERIOR ═══ -->
-        <Grid Grid.Row="0"
-              BackgroundColor="{StaticResource Tinta}"
-              ColumnDefinitions="224,Auto,*,Auto,Auto,Auto"
-              ColumnSpacing="0">
-
-            <!-- Logotipo -->
-            <HorizontalStackLayout Grid.Column="0" Spacing="10" Padding="16,0" VerticalOptions="Center">
-                <Image Source="logo.png" WidthRequest="22" HeightRequest="22" Aspect="AspectFit" />
-                <Label Text="RH Manager"
-                       FontFamily="{StaticResource FuenteTitular}"
-                       FontSize="19"
-                       FontAttributes="Bold"                       TextColor="#FFFFFF"
-                       VerticalOptions="Center" />
-            </HorizontalStackLayout>
-
-            <!-- Chip de empresa con punto de color -->
-            <Border Grid.Column="1"
-                    BackgroundColor="{StaticResource Tinta3}"
-                    StrokeThickness="0"
-                    Padding="10,5"
-                    VerticalOptions="Center"
-                    Margin="6,0,0,0">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
-                <HorizontalStackLayout Spacing="7">
-                    <Ellipse Fill="{Binding ColorEmpresa}"
-                             WidthRequest="8" HeightRequest="8"
-                             VerticalOptions="Center" />
-                    <Label Text="{Binding EmpresaActiva}"
-                           FontFamily="{StaticResource FuenteTitular}"
-                           FontSize="11"
-                           CharacterSpacing="1.2"                           TextColor="#E4EAEF"
-                           VerticalOptions="Center" />
-                </HorizontalStackLayout>
-            </Border>
-
-            <!-- Buscador -->
-            <Border Grid.Column="2"
-                    BackgroundColor="{StaticResource Tinta2}"
-                    StrokeThickness="0"
-                    Padding="10,0"
-                    Margin="16,10"
-                    MaximumWidthRequest="260"
-                    HorizontalOptions="Start">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
-                <Entry Text="{Binding Busqueda}"
-                       Placeholder="Buscar colaborador..."
-                       PlaceholderColor="#7C8F9C"
-                       TextColor="#E4EAEF"
-                       BackgroundColor="Transparent"
-                       FontSize="13"                       VerticalOptions="Center" />
-            </Border>
-
-            <!-- Campana con contador -->
-            <Grid Grid.Column="3" Padding="10,0" VerticalOptions="Center">
-                <Label Text="&#128276;" FontSize="15" VerticalOptions="Center" />
-                <Border BackgroundColor="{StaticResource Sello}"
-                        StrokeThickness="0"
-                        Padding="4,1"
-                        HorizontalOptions="End"
-                        VerticalOptions="Start"
-                        Margin="0,4,0,0">
+            <!-- Identidad del usuario -->
+            <Grid Grid.Row="0" Padding="18,20,18,18" ColumnDefinitions="44,*" ColumnSpacing="12">
+                <Border Grid.Column="0"
+                        BackgroundColor="{StaticResource Tinta}"
+                        Stroke="{StaticResource Tinta3}"
+                        StrokeThickness="1"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="0">
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8" />
+                        <RoundRectangle CornerRadius="22" />
                     </Border.StrokeShape>
-                    <Label Text="{Binding AvisosPendientes}"
+                    <Label Text="{Binding InicialesUsuario}"
                            FontFamily="{StaticResource FuenteTitular}"
-                           FontSize="9"
+                           FontSize="15"
                            FontAttributes="Bold"
-                           TextColor="#FFFFFF" />
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
                 </Border>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="{Binding Usuario}"
+                           FontFamily="{StaticResource FuenteTitular}"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="#FFFFFF"
+                           LineBreakMode="TailTruncation" />
+                    <Label Text="{Binding PerfilTexto}"
+                           FontFamily="{StaticResource FuenteTexto}"
+                           FontSize="11"
+                           TextColor="{StaticResource TextoMenu}"
+                           LineBreakMode="TailTruncation" />
+                </VerticalStackLayout>
             </Grid>
 
-            <!-- Usuario y perfil -->
-            <VerticalStackLayout Grid.Column="4" Padding="12,0" VerticalOptions="Center" Spacing="0">
-                <Label Text="{Binding Usuario}"
-                       FontFamily="{StaticResource FuenteTexto}"
-                       FontSize="12"
-                       TextColor="#E4EAEF"
-                       HorizontalOptions="End" />
-                <Label Text="{Binding PerfilTexto}"
-                       FontFamily="{StaticResource FuenteTitular}"
-                       FontSize="9"
-                       CharacterSpacing="1.2"                       TextColor="#7C8F9C"
-                       HorizontalOptions="End" />
-            </VerticalStackLayout>
+            <!-- Navegacion -->
+            <ScrollView Grid.Row="1">
+                <VerticalStackLayout Padding="10,4" Spacing="2">
 
-            <HorizontalStackLayout Grid.Column="5" Spacing="6" Padding="0,0,14,0" VerticalOptions="Center">
-                <Button Text="Empresa"
-                        Style="{StaticResource BotonSecundario}"
-                        BackgroundColor="{StaticResource Tinta3}"
-                        TextColor="#E4EAEF"
-                        BorderColor="{StaticResource Tinta3}"
-                        Padding="10,5"
-                        MinimumHeightRequest="26"
-                        FontSize="10"
-                        Command="{Binding CambiarEmpresaCommand}"
-                        IsEnabled="{Binding NoEstaOcupado}" />
-                <Button Text="Salir"
-                        Style="{StaticResource BotonSecundario}"
-                        BackgroundColor="{StaticResource Tinta3}"
-                        TextColor="#E4EAEF"
-                        BorderColor="{StaticResource Tinta3}"
-                        Padding="10,5"
-                        MinimumHeightRequest="26"
-                        FontSize="10"
-                        Command="{Binding CerrarSesionCommand}"
-                        IsEnabled="{Binding NoEstaOcupado}" />
-            </HorizontalStackLayout>
-        </Grid>
+                    <!-- Dashboard -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Resumen" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsResumen}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M1,1 H8 V8 H1 Z M12,1 H19 V6 H12 Z M12,10 H19 V19 H12 Z M1,12 H8 V19 H1 Z"
+                                  Stroke="{Binding EsResumen, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Dashboard"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsResumen, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
 
-        <!-- Borde de 3px con el color de la empresa activa -->
-        <BoxView Grid.Row="1" Color="{Binding ColorEmpresa}" />
+                    <!-- Colaboradores -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Colaboradores" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsColaboradores}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M7,3.2 A3,3 0 1,0 7,9.2 A3,3 0 1,0 7,3.2 Z M1.5,18 C1.5,14.6 3.9,11.8 7,11.8 C10.1,11.8 12.5,14.6 12.5,18 M14.6,4.4 A2.4,2.4 0 1,0 14.6,9.2 A2.4,2.4 0 1,0 14.6,4.4 Z M15,12 C17.1,12.5 18.5,14.5 18.5,17"
+                                  Stroke="{Binding EsColaboradores, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Colaboradores"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsColaboradores, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
 
-        <Grid Grid.Row="2" ColumnDefinitions="224,*">
+                    <!-- Documentos -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Documentos" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsDocumentos}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M4,1.5 H12 L16,5.5 V18.5 H4 Z M12,1.5 V5.5 H16 M6.5,10 H13.5 M6.5,13.5 H13.5"
+                                  Stroke="{Binding EsDocumentos, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Documentos"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsDocumentos, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
 
-            <!-- ═══ MENU LATERAL ═══ -->
-            <ScrollView Grid.Column="0" BackgroundColor="{StaticResource Tinta2}">
-                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Menu}" Padding="0,14">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ItemMenu">
-                            <Grid ColumnDefinitions="3,*">
-                                <BoxView Grid.Column="0"
-                                         Color="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=ColorEmpresa}"
-                                         IsVisible="{Binding EsActivo}" />
-                                <Button Grid.Column="1"
-                                        Text="{Binding Titulo}"
-                                        Style="{StaticResource BotonMenu}"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=IrASeccionCommand}"
-                                        CommandParameter="{Binding .}" />
-                            </Grid>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
+                    <!-- Historial -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Historial" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsHistorial}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M10,2.5 A7.5,7.5 0 1,0 10,17.5 A7.5,7.5 0 1,0 10,2.5 Z M10,6 V10.4 L13.2,12.2"
+                                  Stroke="{Binding EsHistorial, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Historial"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsHistorial, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
+
+                    <!-- Alertas -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Alertas" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsAlertas}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*,Auto" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M10,2.2 C7.1,2.2 5.4,4.2 5.4,7.1 V11.6 L3.8,14.4 H16.2 L14.6,11.6 V7.1 C14.6,4.2 12.9,2.2 10,2.2 Z M8,16.4 C8.3,17.4 9.1,18 10,18 C10.9,18 11.7,17.4 12,16.4"
+                                  Stroke="{Binding EsAlertas, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Alertas"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsAlertas, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                            <Border Grid.Column="2"
+                                    BackgroundColor="{StaticResource Sello}"
+                                    StrokeThickness="0"
+                                    Padding="7,2"
+                                    VerticalOptions="Center"
+                                    IsVisible="{Binding HayAvisosPendientes}">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="9" />
+                                </Border.StrokeShape>
+                                <Label Text="{Binding AvisosPendientes}"
+                                       FontFamily="{StaticResource FuenteTitular}"
+                                       FontSize="10"
+                                       FontAttributes="Bold"
+                                       TextColor="#FFFFFF" />
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Reportes -->
+                    <Grid HeightRequest="44">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Reportes" />
+                        </Grid.GestureRecognizers>
+                        <Border BackgroundColor="{StaticResource Accion}"
+                                StrokeThickness="0"
+                                IsVisible="{Binding EsReportes}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="6" />
+                            </Border.StrokeShape>
+                        </Border>
+                        <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                            <Path Grid.Column="0"
+                                  Data="M2.5,17.5 H17.5 M5.5,17.5 V11 M10,17.5 V5.5 M14.5,17.5 V8.5"
+                                  Stroke="{Binding EsReportes, Converter={StaticResource PincelMenu}}"
+                                  StrokeThickness="1.6"
+                                  WidthRequest="20" HeightRequest="20"
+                                  VerticalOptions="Center" />
+                            <Label Grid.Column="1" Text="Reportes"
+                                   FontFamily="{StaticResource FuenteTexto}"
+                                   FontSize="14"
+                                   TextColor="{Binding EsReportes, Converter={StaticResource TextoMenu}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- ═══ CONTENIDO ═══ -->
-            <Grid Grid.Column="1" Padding="30,26">
+            <!-- Pie del menu -->
+            <VerticalStackLayout Grid.Row="2" Padding="10,10,10,16" Spacing="2">
+                <BoxView Color="{StaticResource Tinta3}" HeightRequest="1" Margin="4,0,4,10" />
 
-                <!-- Seccion Colaboradores -->
-                <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding EsColaboradores}" RowSpacing="18">
-
-                    <Label Grid.Row="0" Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
-
-                    <!-- ═══ FILTROS ═══
-                         El buscador de texto vive en la barra superior. Aca van
-                         los desplegables. Todo se traduce a SQL, nada se filtra
-                         en memoria (CLAUDE.md, regla 13). -->
-                    <Border Grid.Row="1"
-                            BackgroundColor="{StaticResource Superficie}"
-                            Stroke="{StaticResource Linea}"
-                            StrokeThickness="1"
-                            Padding="18,12">
+                <!-- Configuracion -->
+                <Grid HeightRequest="44">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Configuracion" />
+                    </Grid.GestureRecognizers>
+                    <Border BackgroundColor="{StaticResource Accion}"
+                            StrokeThickness="0"
+                            IsVisible="{Binding EsConfiguracion}">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="8" />
+                            <RoundRectangle CornerRadius="6" />
                         </Border.StrokeShape>
-
-                        <Grid ColumnDefinitions="Auto,206,Auto,206,Auto,190,*,Auto"
-                              ColumnSpacing="10"
-                              RowDefinitions="Auto">
-
-                            <Label Grid.Column="0" Text="Departamento"
-                                   Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
-                            <Border Grid.Column="1" Stroke="{StaticResource LineaFuerte}"
-                                    StrokeThickness="1" Padding="6,0">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="8" />
-                                </Border.StrokeShape>
-                                <Picker ItemsSource="{Binding Departamentos}"
-                                        ItemDisplayBinding="{Binding Nombre}"
-                                        SelectedItem="{Binding DepartamentoSeleccionado}"
-                                        FontSize="13"
-                                        TextColor="{StaticResource Tinta}"
-                                        BackgroundColor="Transparent"
-                                        HeightRequest="32" />
-                            </Border>
-
-                            <Label Grid.Column="2" Text="Sucursal"
-                                   Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
-                            <Border Grid.Column="3" Stroke="{StaticResource LineaFuerte}"
-                                    StrokeThickness="1" Padding="6,0">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="8" />
-                                </Border.StrokeShape>
-                                <Picker ItemsSource="{Binding Sucursales}"
-                                        ItemDisplayBinding="{Binding Nombre}"
-                                        SelectedItem="{Binding SucursalSeleccionada}"
-                                        FontSize="13"
-                                        TextColor="{StaticResource Tinta}"
-                                        BackgroundColor="Transparent"
-                                        HeightRequest="32" />
-                            </Border>
-
-                            <Label Grid.Column="4" Text="Estado"
-                                   Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
-                            <Border Grid.Column="5" Stroke="{StaticResource LineaFuerte}"
-                                    StrokeThickness="1" Padding="6,0">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="8" />
-                                </Border.StrokeShape>
-                                <Picker ItemsSource="{Binding Estados}"
-                                        ItemDisplayBinding="{Binding Nombre}"
-                                        SelectedItem="{Binding EstadoSeleccionado}"
-                                        FontSize="13"
-                                        TextColor="{StaticResource Tinta}"
-                                        BackgroundColor="Transparent"
-                                        HeightRequest="32" />
-                            </Border>
-
-                            <Button Grid.Column="7"
-                                    Text="Limpiar"
-                                    Style="{StaticResource BotonSecundario}"
-                                    Command="{Binding LimpiarFiltrosCommand}"
-                                    IsEnabled="{Binding NoEstaOcupado}"
-                                    IsVisible="{Binding HayFiltros}"
-                                    VerticalOptions="Center" />
-                        </Grid>
                     </Border>
-
-                    <!-- Panel con la tabla -->
-                    <Border Grid.Row="2"
-                            BackgroundColor="{StaticResource Superficie}"
-                            Stroke="{StaticResource Linea}"
-                            StrokeThickness="1"
-                            Padding="0">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="8" />
-                        </Border.StrokeShape>
-                      <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Default">
-
-                        <Grid RowDefinitions="Auto,Auto,*">
-
-                            <!-- Cabecera del panel -->
-                            <Grid Grid.Row="0" Padding="18,13" ColumnDefinitions="*,Auto">
-                                <Label Grid.Column="0" Text="Expedientes del personal"
-                                       Style="{StaticResource TituloSeccion}" />
-                                <Label Grid.Column="1"
-                                       Text="{Binding ResumenConteo}"
-                                       Style="{StaticResource EtiquetaCampo}"
-                                       VerticalOptions="Center" />
-                            </Grid>
-                            <BoxView Grid.Row="0" Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
-
-                            <!--
-                                Anchos fijos, no proporcionales. Dentro de un CollectionView
-                                las columnas con estrella se miden contra el contenido y no
-                                contra el ancho disponible: la tabla crecia mas que el panel
-                                y desalineaba la cabecera. Con anchos fijos, cabecera y filas
-                                comparten la misma reticula y el desbordamiento se resuelve
-                                con desplazamiento horizontal.
-                            -->
-                            <Grid Grid.Row="1" Padding="18,9"
-                                  BackgroundColor="#F7F9FB"
-                                  ColumnDefinitions="3,66,250,112,154,148,78,112,80">
-                                <Label Grid.Column="1" Text="Codigo" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="2" Text="Nombre" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="3" Text="Identidad" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="4" Text="Puesto" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="5" Text="Sucursal" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="6" Text="Ingreso" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Grid.Column="7" Text="Salario" Style="{StaticResource EtiquetaCampo}"
-                                       HorizontalTextAlignment="End" Margin="0,0,10,0" />
-                                <Label Grid.Column="8" Text="Estado" Style="{StaticResource EtiquetaCampo}" />
-                            </Grid>
-                            <BoxView Grid.Row="1" Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
-
-                            <!-- Filas -->
-                            <CollectionView Grid.Row="2" ItemsSource="{Binding Colaboradores}" SelectionMode="None">
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate x:DataType="srv:FilaColaborador">
-                                        <Grid>
-                                            <Grid ColumnDefinitions="3,66,250,112,154,148,78,112,80"
-                                                  Padding="18,0"
-                                                  HeightRequest="44"
-                                                  BackgroundColor="Transparent">
-                                                <!-- La fila entera abre el expediente -->
-                                                <Grid.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=AbrirFichaCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </Grid.GestureRecognizers>
-
-                                                <!-- Borde izquierdo segun completitud del expediente -->
-                                                <BoxView Grid.Column="0"
-                                                         Color="{Binding Expediente, Converter={StaticResource ColorExpediente}}"
-                                                         Margin="-18,0,0,0" />
-
-                                                <Label Grid.Column="1" Text="{Binding Codigo}"
-                                                       Style="{StaticResource DatoSuave}" VerticalOptions="Center" />
-                                                <Label Grid.Column="2" Text="{Binding NombreCompleto}"
-                                                       Style="{StaticResource Cuerpo}" VerticalOptions="Center"
-                                                       LineBreakMode="TailTruncation" />
-                                                <Label Grid.Column="3" Text="{Binding Identidad}"
-                                                       Style="{StaticResource Dato}" VerticalOptions="Center" />
-                                                <Label Grid.Column="4" Text="{Binding Puesto}"
-                                                       Style="{StaticResource Cuerpo}" VerticalOptions="Center"
-                                                       LineBreakMode="TailTruncation" />
-                                                <Label Grid.Column="5" Text="{Binding Sucursal}"
-                                                       Style="{StaticResource CuerpoSuave}" VerticalOptions="Center"
-                                                       LineBreakMode="TailTruncation" />
-                                                <Label Grid.Column="6" Text="{Binding FechaIngresoTexto}"
-                                                       Style="{StaticResource Dato}" VerticalOptions="Center" />
-                                                <Label Grid.Column="7" Text="{Binding SalarioTexto}"
-                                                       Style="{StaticResource Dato}" VerticalOptions="Center"
-                                                       HorizontalTextAlignment="End" Margin="0,0,10,0" />
-
-                                                <!-- Sello de estado -->
-                                                <Border Grid.Column="8"
-                                                        BackgroundColor="{Binding Estado, Converter={StaticResource FondoEstado}}"
-                                                        StrokeThickness="0"
-                                                        Padding="7,2"
-                                                        HorizontalOptions="Start"
-                                                        VerticalOptions="Center">
-                                                    <Border.StrokeShape>
-                                                        <RoundRectangle CornerRadius="8" />
-                                                    </Border.StrokeShape>
-                                                    <Label Text="{Binding EstadoTexto}"
-                                                           FontFamily="{StaticResource FuenteTitular}"
-                                                           FontSize="10"
-                                                           FontAttributes="Bold"
-                                                           CharacterSpacing="1.2"                                                           TextColor="{Binding Estado, Converter={StaticResource ColorEstado}}" />
-                                                </Border>
-                                            </Grid>
-                                            <BoxView Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-
-                            <!-- Lista vacia: se dice, no se deja el panel en blanco -->
-                            <VerticalStackLayout Grid.Row="2"
-                                                 IsVisible="{Binding SinResultados}"
-                                                 Padding="18,26"
-                                                 Spacing="6">
-                                <Label Text="Sin resultados" Style="{StaticResource TituloSeccion}"
-                                       TextColor="{StaticResource Acero}" />
-                                <Label Style="{StaticResource CuerpoSuave}"
-                                       Text="Ningun colaborador de esta empresa cumple los criterios de busqueda." />
-                            </VerticalStackLayout>
-                        </Grid>
-                      </ScrollView>
-                    </Border>
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                        <Path Grid.Column="0"
+                              Data="M2.5,6 H17.5 M2.5,14 H17.5 M7,3.8 A2.2,2.2 0 1,0 7,8.2 A2.2,2.2 0 1,0 7,3.8 Z M13,11.8 A2.2,2.2 0 1,0 13,16.2 A2.2,2.2 0 1,0 13,11.8 Z"
+                              Stroke="{Binding EsConfiguracion, Converter={StaticResource PincelMenu}}"
+                              StrokeThickness="1.6"
+                              WidthRequest="20" HeightRequest="20"
+                              VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Configuracion"
+                               FontFamily="{StaticResource FuenteTexto}"
+                               FontSize="14"
+                               TextColor="{Binding EsConfiguracion, Converter={StaticResource TextoMenu}}"
+                               VerticalOptions="Center" />
+                    </Grid>
                 </Grid>
 
-                <!-- ═══ FICHA DEL COLABORADOR ═══ -->
-                <ScrollView IsVisible="{Binding HayFicha}">
-                    <VerticalStackLayout Spacing="0">
+                <!-- Cambiar de empresa -->
+                <Grid HeightRequest="44">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding CambiarEmpresaCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                        <Path Grid.Column="0"
+                              Data="M2,17.5 H18 M4,17.5 V5 L10,2.5 V17.5 M10,7 H16 V17.5 M6.4,8.5 V9.5 M6.4,12 V13"
+                              Stroke="{StaticResource PincelMenu}"
+                              StrokeThickness="1.6"
+                              WidthRequest="20" HeightRequest="20"
+                              VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Cambiar de empresa"
+                               FontFamily="{StaticResource FuenteTexto}"
+                               FontSize="14"
+                               TextColor="{StaticResource TextoMenu}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Grid>
 
-                        <!-- Cabecera del expediente -->
-                        <Border BackgroundColor="{StaticResource Superficie}"
-                                Stroke="{StaticResource Linea}" StrokeThickness="1" Padding="24,20">
+                <!-- Cerrar sesion -->
+                <Grid HeightRequest="44">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding CerrarSesionCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Grid ColumnDefinitions="20,*" ColumnSpacing="14" Padding="14,0" InputTransparent="True">
+                        <Path Grid.Column="0"
+                              Data="M11.5,3 H4 V17 H11.5 M8.5,10 H17.5 M14.5,7 L17.5,10 L14.5,13"
+                              Stroke="{StaticResource PincelSello}"
+                              StrokeThickness="1.6"
+                              WidthRequest="20" HeightRequest="20"
+                              VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Cerrar sesion"
+                               FontFamily="{StaticResource FuenteTexto}"
+                               FontSize="14"
+                               TextColor="#E88B86"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Grid>
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- ═══════════════════════ AREA DE TRABAJO ═══════════════════════ -->
+        <Grid Grid.Column="1" RowDefinitions="64,1,*" BackgroundColor="{StaticResource Papel}">
+
+            <!-- Barra superior -->
+            <Grid Grid.Row="0"
+                  BackgroundColor="{StaticResource Superficie}"
+                  ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                  ColumnSpacing="16"
+                  Padding="24,0">
+
+                <!-- Marca y empresa activa -->
+                <HorizontalStackLayout Grid.Column="0" Spacing="10" VerticalOptions="Center">
+                    <Label Text="SIGEM"
+                           FontFamily="{StaticResource FuenteTitular}"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           CharacterSpacing="-0.3"
+                           TextColor="{StaticResource Texto}"
+                           VerticalOptions="Center" />
+                    <Label Text="|"
+                           FontSize="18"
+                           TextColor="{StaticResource LineaFuerte}"
+                           VerticalOptions="Center" />
+                    <Ellipse Fill="{Binding ColorEmpresa}"
+                             WidthRequest="9" HeightRequest="9"
+                             VerticalOptions="Center" />
+                    <Label Text="{Binding EmpresaActiva}"
+                           FontFamily="{StaticResource FuenteTitular}"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           CharacterSpacing="-0.3"
+                           TextColor="{StaticResource Texto}"
+                           VerticalOptions="Center"
+                           LineBreakMode="TailTruncation" />
+                </HorizontalStackLayout>
+
+                <!-- Buscador -->
+                <Border Grid.Column="1"
+                        BackgroundColor="{StaticResource SuperficieSuave}"
+                        Stroke="{StaticResource Linea}"
+                        StrokeThickness="1"
+                        Padding="12,0"
+                        MaximumWidthRequest="420"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        HeightRequest="40">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="4" />
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="18,*,Auto" ColumnSpacing="10">
+                        <Path Grid.Column="0"
+                              Data="M9,2.5 A6.5,6.5 0 1,0 9,15.5 A6.5,6.5 0 1,0 9,2.5 Z M13.7,13.7 L18,18"
+                              Stroke="{StaticResource PincelAceroSuave}"
+                              StrokeThickness="1.6"
+                              WidthRequest="18" HeightRequest="18"
+                              VerticalOptions="Center" />
+                        <Entry Grid.Column="1"
+                               Text="{Binding Busqueda}"
+                               Placeholder="Buscar colaboradores, documentos..."
+                               PlaceholderColor="{StaticResource AceroSuave}"
+                               TextColor="{StaticResource Texto}"
+                               BackgroundColor="Transparent"
+                               FontSize="13"
+                               VerticalOptions="Center" />
+                        <Border Grid.Column="2"
+                                BackgroundColor="{StaticResource Superficie}"
+                                Stroke="{StaticResource Linea}"
+                                StrokeThickness="1"
+                                Padding="6,2"
+                                VerticalOptions="Center">
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="8" />
+                                <RoundRectangle CornerRadius="3" />
                             </Border.StrokeShape>
-                            <Grid ColumnDefinitions="88,*,Auto" ColumnSpacing="20">
-
-                                <!-- Avatar con iniciales -->
-                                <Border Grid.Column="0"
-                                        BackgroundColor="{StaticResource AzulClaro}"
-                                        Stroke="{StaticResource Tinta}" StrokeThickness="2"
-                                        WidthRequest="88" HeightRequest="88" Padding="0"
-                                        VerticalOptions="Start">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="44" />
-                                    </Border.StrokeShape>
-                                    <Label Text="{Binding Ficha.Iniciales}"
-                                           FontSize="30" FontAttributes="Bold"
-                                           TextColor="{StaticResource Tinta}"
-                                           HorizontalOptions="Center" VerticalOptions="Center" />
-                                </Border>
-
-                                <VerticalStackLayout Grid.Column="1" Spacing="8">
-                                    <Label Text="{Binding Ficha.NombreCompleto}"
-                                           FontSize="26" FontAttributes="Bold"
-                                           TextColor="{StaticResource Texto}" />
-                                    <Label Text="{Binding Ficha.Puesto}" Style="{StaticResource CuerpoSuave}" />
-
-                                    <!-- Datos clave en monoespaciada -->
-                                    <FlexLayout Wrap="Wrap" Margin="0,6,0,0">
-                                        <VerticalStackLayout Margin="0,0,34,8">
-                                            <Label Text="Codigo" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Codigo}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout Margin="0,0,34,8">
-                                            <Label Text="Identidad" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Identidad}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout Margin="0,0,34,8">
-                                            <Label Text="Ingreso" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.IngresoTexto}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout Margin="0,0,34,8">
-                                            <Label Text="Antiguedad" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.AntiguedadTexto}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout Margin="0,0,34,8">
-                                            <Label Text="Sucursal" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Sucursal}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                    </FlexLayout>
-                                </VerticalStackLayout>
-
-                                <VerticalStackLayout Grid.Column="2" Spacing="8" HorizontalOptions="End">
-                                    <Border BackgroundColor="{StaticResource VerdeTenue}" StrokeThickness="0"
-                                            Padding="12,5" HorizontalOptions="End">
-                                        <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="8" />
-                                        </Border.StrokeShape>
-                                        <Label Text="{Binding Ficha.EstadoTexto}"
-                                               FontSize="12" FontAttributes="Bold"
-                                               TextColor="{StaticResource Verde}" />
-                                    </Border>
-                                    <Button Text="Constancia de trabajo"
-                                            Style="{StaticResource BotonPrimario}"
-                                            FontSize="13"
-                                            Command="{Binding ConstanciaCommand}"
-                                            IsEnabled="{Binding NoEstaOcupado}" />
-                                    <Button Text="Volver a la lista"
-                                            Style="{StaticResource BotonSecundario}"
-                                            FontSize="13"
-                                            Command="{Binding CerrarFichaCommand}" />
-                                </VerticalStackLayout>
-                            </Grid>
+                            <Label Text="Ctrl+K"
+                                   Style="{StaticResource DatoSuave}"
+                                   FontSize="10" />
                         </Border>
+                    </Grid>
+                </Border>
 
-                        <!-- Pestanas tipo carpeta -->
-                        <HorizontalStackLayout Spacing="4" Margin="10,16,0,0">
-                            <Button Text="General" Style="{StaticResource BotonSecundario}" FontSize="13"
-                                    Command="{Binding IrAPestanaCommand}" CommandParameter="General"
-                                    BackgroundColor="{Binding EsGeneral, Converter={StaticResource FondoPestana}}"
-                                    TextColor="{Binding EsGeneral, Converter={StaticResource TextoPestana}}" />
-                            <Button Text="Laboral" Style="{StaticResource BotonSecundario}" FontSize="13"
-                                    Command="{Binding IrAPestanaCommand}" CommandParameter="Laboral"
-                                    BackgroundColor="{Binding EsLaboral, Converter={StaticResource FondoPestana}}"
-                                    TextColor="{Binding EsLaboral, Converter={StaticResource TextoPestana}}" />
-                            <Button Text="Documentos" Style="{StaticResource BotonSecundario}" FontSize="13"
-                                    Command="{Binding IrAPestanaCommand}" CommandParameter="Documentos"
-                                    BackgroundColor="{Binding EsDocumentos, Converter={StaticResource FondoPestana}}"
-                                    TextColor="{Binding EsDocumentos, Converter={StaticResource TextoPestana}}" />
-                            <Button Text="Historial" Style="{StaticResource BotonSecundario}" FontSize="13"
-                                    Command="{Binding IrAPestanaCommand}" CommandParameter="Historial"
-                                    BackgroundColor="{Binding EsHistorial, Converter={StaticResource FondoPestana}}"
-                                    TextColor="{Binding EsHistorial, Converter={StaticResource TextoPestana}}" />
-                            <Button Text="Emergencia" Style="{StaticResource BotonSecundario}" FontSize="13"
-                                    Command="{Binding IrAPestanaCommand}" CommandParameter="Emergencia"
-                                    BackgroundColor="{Binding EsEmergencia, Converter={StaticResource FondoPestana}}"
-                                    TextColor="{Binding EsEmergencia, Converter={StaticResource TextoPestana}}" />
-                        </HorizontalStackLayout>
+                <!-- Campana con globo -->
+                <Grid Grid.Column="2" WidthRequest="34" VerticalOptions="Center">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Alertas" />
+                    </Grid.GestureRecognizers>
+                    <Path Data="M10,2.2 C7.1,2.2 5.4,4.2 5.4,7.1 V11.6 L3.8,14.4 H16.2 L14.6,11.6 V7.1 C14.6,4.2 12.9,2.2 10,2.2 Z M8,16.4 C8.3,17.4 9.1,18 10,18 C10.9,18 11.7,17.4 12,16.4"
+                          Stroke="{StaticResource PincelAcero}"
+                          StrokeThickness="1.6"
+                          WidthRequest="20" HeightRequest="20"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
+                    <Ellipse Fill="{StaticResource PincelSello}"
+                             WidthRequest="8" HeightRequest="8"
+                             HorizontalOptions="End"
+                             VerticalOptions="Start"
+                             Margin="0,12,4,0"
+                             IsVisible="{Binding HayAvisosPendientes}" />
+                </Grid>
 
-                        <!-- Hoja de la pestana activa -->
-                        <Border BackgroundColor="{StaticResource Superficie}"
-                                Stroke="{StaticResource Linea}" StrokeThickness="1"
-                                Padding="24,20" Margin="0,-1,0,0" MinimumHeightRequest="300">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="8" />
-                            </Border.StrokeShape>
-                            <Grid>
+                <!-- Configuracion -->
+                <Grid Grid.Column="3" WidthRequest="28" VerticalOptions="Center">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrASeccionCommand}" CommandParameter="Configuracion" />
+                    </Grid.GestureRecognizers>
+                    <Path Data="M2.5,6 H17.5 M2.5,14 H17.5 M7,3.8 A2.2,2.2 0 1,0 7,8.2 A2.2,2.2 0 1,0 7,3.8 Z M13,11.8 A2.2,2.2 0 1,0 13,16.2 A2.2,2.2 0 1,0 13,11.8 Z"
+                          Stroke="{StaticResource PincelAcero}"
+                          StrokeThickness="1.6"
+                          WidthRequest="20" HeightRequest="20"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
+                </Grid>
 
-                                <!-- GENERAL -->
-                                <FlexLayout Wrap="Wrap" IsVisible="{Binding EsGeneral}">
-                                    <VerticalStackLayout WidthRequest="260" Margin="0,0,24,18">
-                                        <Label Text="Nombre completo" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.NombreCompleto}" Style="{StaticResource Cuerpo}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="200" Margin="0,0,24,18">
-                                        <Label Text="Identidad" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.Identidad}" Style="{StaticResource Dato}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="150" Margin="0,0,24,18">
-                                        <Label Text="Sexo" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.SexoTexto}" Style="{StaticResource Cuerpo}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="180" Margin="0,0,24,18">
-                                        <Label Text="Nacimiento" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.NacimientoTexto}" Style="{StaticResource Dato}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="130" Margin="0,0,24,18">
-                                        <Label Text="Edad" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.EdadTexto}" Style="{StaticResource Cuerpo}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="180" Margin="0,0,24,18">
-                                        <Label Text="Telefono" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.Telefono}" Style="{StaticResource Dato}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="300" Margin="0,0,24,18">
-                                        <Label Text="Correo" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.Correo}" Style="{StaticResource Cuerpo}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout WidthRequest="420" Margin="0,0,24,18">
-                                        <Label Text="Direccion" Style="{StaticResource EtiquetaCampo}" />
-                                        <Label Text="{Binding Ficha.Direccion}" Style="{StaticResource Cuerpo}" />
-                                    </VerticalStackLayout>
-                                </FlexLayout>
+                <!-- Pastilla del usuario -->
+                <Border Grid.Column="4"
+                        BackgroundColor="{StaticResource AzulClaro}"
+                        Stroke="{StaticResource Linea}"
+                        StrokeThickness="1"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        Padding="0"
+                        VerticalOptions="Center">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18" />
+                    </Border.StrokeShape>
+                    <Label Text="{Binding InicialesUsuario}"
+                           FontFamily="{StaticResource FuenteTitular}"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Accion}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+            </Grid>
 
-                                <!-- LABORAL -->
-                                <VerticalStackLayout IsVisible="{Binding EsLaboral}" Spacing="18">
-                                    <FlexLayout Wrap="Wrap">
-                                        <VerticalStackLayout WidthRequest="240" Margin="0,0,24,18">
-                                            <Label Text="Puesto" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Puesto}" Style="{StaticResource Cuerpo}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout WidthRequest="220" Margin="0,0,24,18">
-                                            <Label Text="Departamento" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Departamento}" Style="{StaticResource Cuerpo}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout WidthRequest="240" Margin="0,0,24,18">
-                                            <Label Text="Sucursal" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.Sucursal}" Style="{StaticResource Cuerpo}" />
-                                        </VerticalStackLayout>
-                                        <VerticalStackLayout WidthRequest="180" Margin="0,0,24,18">
-                                            <Label Text="Salario base" Style="{StaticResource EtiquetaCampo}" />
-                                            <Label Text="{Binding Ficha.SalarioTexto}" Style="{StaticResource Dato}" />
-                                        </VerticalStackLayout>
-                                    </FlexLayout>
+            <BoxView Grid.Row="1" Color="{StaticResource Linea}" />
 
-                                    <Label Text="Contratos" Style="{StaticResource TituloSeccion}" />
-                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Contratos}" Spacing="8">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="srv:LineaContrato">
-                                                <Grid ColumnDefinitions="3,140,180,220,*,Auto"
-                                                      BackgroundColor="{StaticResource Papel}" Padding="0,10">
-                                                    <BoxView Grid.Column="0" Color="{StaticResource Verde}" />
-                                                    <Label Grid.Column="1" Text="{Binding Numero}"
-                                                           Style="{StaticResource Dato}" Margin="14,0,0,0" />
-                                                    <Label Grid.Column="2" Text="{Binding Tipo}"
-                                                           Style="{StaticResource Cuerpo}" />
-                                                    <Label Grid.Column="3" Text="{Binding PeriodoTexto}"
-                                                           Style="{StaticResource DatoSuave}" />
-                                                    <Label Grid.Column="4" Text="{Binding SalarioTexto}"
-                                                           Style="{StaticResource Dato}" />
-                                                    <Label Grid.Column="5" Text="{Binding EstadoTexto}"
-                                                           Style="{StaticResource EtiquetaCampo}" Margin="0,0,14,0" />
-                                                </Grid>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </VerticalStackLayout>
-                                </VerticalStackLayout>
-
-                                <!-- DOCUMENTOS -->
-                                <VerticalStackLayout IsVisible="{Binding EsDocumentos}" Spacing="8">
-                                    <Label Text="Documentos digitalizados" Style="{StaticResource TituloSeccion}" />
-                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Documentos}" Spacing="8">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="srv:LineaDocumento">
-                                                <Grid ColumnDefinitions="3,220,*,140,140,Auto"
-                                                      BackgroundColor="{StaticResource Papel}" Padding="0,10">
-                                                    <BoxView Grid.Column="0" Color="{StaticResource Verde}" />
-                                                    <Label Grid.Column="1" Text="{Binding Tipo}"
-                                                           Style="{StaticResource Cuerpo}" Margin="14,0,0,0" />
-                                                    <Label Grid.Column="2" Text="{Binding NombreArchivo}"
-                                                           Style="{StaticResource DatoSuave}"
-                                                           LineBreakMode="TailTruncation" />
-                                                    <Label Grid.Column="3" Text="{Binding EmisionTexto}"
-                                                           Style="{StaticResource Dato}" />
-                                                    <Label Grid.Column="4" Text="{Binding VencimientoTexto}"
-                                                           Style="{StaticResource Dato}" />
-                                                    <Label Grid.Column="5" Text="{Binding SituacionTexto}"
-                                                           Style="{StaticResource EtiquetaCampo}" Margin="0,0,14,0" />
-                                                </Grid>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </VerticalStackLayout>
-                                </VerticalStackLayout>
-
-                                <!-- HISTORIAL: linea de tiempo -->
-                                <VerticalStackLayout IsVisible="{Binding EsHistorial}" Spacing="0">
-                                    <Label Text="Historial laboral" Style="{StaticResource TituloSeccion}"
-                                           Margin="0,0,0,14" />
-                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Movimientos}">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="srv:LineaMovimiento">
-                                                <Grid ColumnDefinitions="16,110,*" Padding="0,0,0,4">
-                                                    <!-- Punto y linea vertical -->
-                                                    <BoxView Grid.Column="0" WidthRequest="2"
-                                                             Color="{StaticResource Linea}"
-                                                             HorizontalOptions="Center"
-                                                             VerticalOptions="Fill" />
-                                                    <Ellipse Grid.Column="0" WidthRequest="10" HeightRequest="10"
-                                                             Fill="{Binding EsVigente, Converter={StaticResource ColorPunto}}"
-                                                             HorizontalOptions="Center" VerticalOptions="Start"
-                                                             Margin="0,6,0,0" />
-
-                                                    <Label Grid.Column="1" Text="{Binding FechaTexto}"
-                                                           Style="{StaticResource Dato}" Margin="8,2,0,0"
-                                                           VerticalOptions="Start" />
-
-                                                    <VerticalStackLayout Grid.Column="2" Spacing="2"
-                                                                         Padding="0,0,0,18">
-                                                        <Label Text="{Binding TipoTexto}"
-                                                               FontSize="14" FontAttributes="Bold"
-                                                               TextColor="{StaticResource Texto}" />
-                                                        <Label Text="{Binding Descripcion}"
-                                                               Style="{StaticResource CuerpoSuave}" />
-                                                        <Label Text="{Binding CambioSalario}"
-                                                               Style="{StaticResource Dato}"
-                                                               IsVisible="{Binding HayCambioSalario}" />
-                                                    </VerticalStackLayout>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </VerticalStackLayout>
-                                </VerticalStackLayout>
-
-                                <!-- EMERGENCIA -->
-                                <VerticalStackLayout IsVisible="{Binding EsEmergencia}" Spacing="8">
-                                    <Label Text="Contactos de emergencia" Style="{StaticResource TituloSeccion}" />
-                                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Contactos}" Spacing="8">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="srv:LineaContacto">
-                                                <Grid ColumnDefinitions="3,260,200,180,Auto"
-                                                      BackgroundColor="{StaticResource Papel}" Padding="0,12">
-                                                    <BoxView Grid.Column="0" Color="{StaticResource Sello}" />
-                                                    <Label Grid.Column="1" Text="{Binding Nombre}"
-                                                           Style="{StaticResource Cuerpo}" Margin="14,0,0,0" />
-                                                    <Label Grid.Column="2" Text="{Binding Parentesco}"
-                                                           Style="{StaticResource CuerpoSuave}" />
-                                                    <Label Grid.Column="3" Text="{Binding Telefono}"
-                                                           Style="{StaticResource Dato}" />
-                                                    <Label Grid.Column="4" Text="{Binding Etiqueta}"
-                                                           Style="{StaticResource EtiquetaCampo}" Margin="0,0,14,0" />
-                                                </Grid>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </VerticalStackLayout>
-                                </VerticalStackLayout>
-                            </Grid>
-                        </Border>
-                    </VerticalStackLayout>
-                </ScrollView>
-
-                <!-- Secciones todavia no construidas -->
-                <VerticalStackLayout IsVisible="{Binding EsOtraSeccion}" Spacing="18">
-                    <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
-
-                    <Border BackgroundColor="{StaticResource Superficie}"
-                            Stroke="{StaticResource Linea}"
-                            StrokeThickness="1"
-                            Padding="0">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="8" />
-                        </Border.StrokeShape>
-                        <VerticalStackLayout>
-                            <Grid Padding="18,13">
-                                <Label Text="Seccion en construccion" Style="{StaticResource TituloSeccion}" />
-                            </Grid>
-                            <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
-                            <VerticalStackLayout Padding="18,16" Spacing="12">
-                                <Label Style="{StaticResource Cuerpo}"
-                                       Text="Esta seccion forma parte del alcance completo de RH Manager y se construye en una etapa posterior. La navegacion, la barra superior y el menu lateral ya estan terminados." />
-                                <Button Text="Ver detalle"
-                                        Style="{StaticResource BotonSecundario}"
-                                        HorizontalOptions="Start"
-                                        Command="{Binding ProximamenteCommand}"
-                                        IsEnabled="{Binding NoEstaOcupado}" />
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
-                    </Border>
-                </VerticalStackLayout>
+            <!-- Contenido: un panel a la vez -->
+            <Grid Grid.Row="2">
+                <p:PanelResumen IsVisible="{Binding PanelResumen}" />
+                <p:PanelColaboradores IsVisible="{Binding PanelColaboradores}" />
+                <p:PanelAlertas IsVisible="{Binding PanelAlertas}" />
+                <p:PanelFicha IsVisible="{Binding PanelFicha}" />
+                <p:PanelPendiente IsVisible="{Binding PanelPendiente}" />
 
                 <ActivityIndicator IsRunning="{Binding EstaOcupado}"
                                    IsVisible="{Binding EstaOcupado}"
-                                   Color="{StaticResource Tinta}"
-                                   HeightRequest="24"
+                                   Color="{StaticResource Accion}"
+                                   HeightRequest="26"
                                    HorizontalOptions="Center"
-                                   VerticalOptions="Start" />
+                                   VerticalOptions="Start"
+                                   Margin="0,12,0,0" />
             </Grid>
         </Grid>
     </Grid>

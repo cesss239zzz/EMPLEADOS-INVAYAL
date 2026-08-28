@@ -59,6 +59,17 @@ public sealed record LineaContrato(
     public string EstadoTexto => Vigente ? "Vigente" : "Terminado";
 }
 
+/// <summary>
+/// Semaforo documental del expediente. Es lo que tiñe cada renglon del panel
+/// "Expediente Digital" de la ficha: verde al dia, ambar por vencer, rojo vencido.
+/// </summary>
+public enum SituacionDocumento
+{
+    Vigente = 0,
+    PorVencer = 1,
+    Vencido = 2
+}
+
 /// <summary>Un documento digitalizado del expediente.</summary>
 public sealed record LineaDocumento(
     string Tipo,
@@ -85,6 +96,20 @@ public sealed record LineaDocumento(
         : EstaVencido ? "Vencido"
         : PorVencer ? "Por vencer"
         : "Vigente";
+
+    /// <summary>Severidad, para que la vista elija color sin repetir la regla.</summary>
+    public SituacionDocumento Situacion => EstaVencido ? SituacionDocumento.Vencido
+        : PorVencer ? SituacionDocumento.PorVencer
+        : SituacionDocumento.Vigente;
+
+    /// <summary>Renglon de apoyo bajo el nombre del documento.</summary>
+    public string DetalleTexto => FechaVencimiento is null
+        ? "Actualizado: " + EmisionTexto
+        : EstaVencido
+            ? "Vencido: " + VencimientoTexto
+            : PorVencer
+                ? "Vence: " + VencimientoTexto
+                : "Vigente hasta: " + VencimientoTexto;
 }
 
 /// <summary>

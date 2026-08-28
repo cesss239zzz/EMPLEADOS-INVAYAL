@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Marcador de las secciones que todavia no se construyen. No queda ninguna
+    opcion del menu sin respuesta: si algo aun no existe, la pantalla lo dice
+    con su nombre en vez de quedarse en blanco.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             x:Class="empleados.Vistas.Paneles.PanelPendiente"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <VerticalStackLayout Padding="32,26,32,32" Spacing="20">
+
+        <VerticalStackLayout Spacing="4">
+            <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
+            <Label Text="{Binding SubtituloSeccion}" Style="{StaticResource CuerpoSuave}" />
+        </VerticalStackLayout>
+
+        <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="0">
+            <VerticalStackLayout>
+                <Grid Padding="22,18" ColumnDefinitions="22,*" ColumnSpacing="12">
+                    <Path Grid.Column="0"
+                          Data="M10,2.5 A7.5,7.5 0 1,0 10,17.5 A7.5,7.5 0 1,0 10,2.5 Z M10,6 V11 M10,13.4 V13.8"
+                          Stroke="{StaticResource PincelAceroSuave}"
+                          StrokeThickness="1.6"
+                          WidthRequest="20" HeightRequest="20"
+                          VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="Seccion en construccion"
+                           Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
+                </Grid>
+                <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                <VerticalStackLayout Padding="22,20" Spacing="14">
+                    <Label Style="{StaticResource Cuerpo}"
+                           Text="Esta seccion forma parte del alcance completo de SIGEM y se construye en una etapa posterior. El menu lateral, la barra superior, el resumen, el directorio de colaboradores y la ficha del expediente ya estan terminados." />
+                    <Button Text="Ir al resumen"
+                            Style="{StaticResource BotonSecundario}"
+                            HorizontalOptions="Start"
+                            Command="{Binding IrASeccionCommand}"
+                            CommandParameter="Resumen"
+                            IsEnabled="{Binding NoEstaOcupado}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+    </VerticalStackLayout>
+
+</ContentView>

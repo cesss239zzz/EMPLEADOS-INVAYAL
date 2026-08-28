@@ -58,6 +58,26 @@ public sealed record FilaColaborador(
         EstadoExpediente.Parcial => "Parcial",
         _ => "Incompleto"
     };
+
+    /// <summary>
+    /// Iniciales para el avatar del directorio. No hay fotografias en el
+    /// expediente todavia, asi que la pastilla lleva las dos iniciales.
+    /// </summary>
+    public string Iniciales
+    {
+        get
+        {
+            var partes = NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (partes.Length == 0)
+            {
+                return "?";
+            }
+
+            var primera = partes[0][..1];
+            var segunda = partes.Length > 2 ? partes[2][..1] : partes.Length > 1 ? partes[1][..1] : string.Empty;
+            return (primera + segunda).ToUpperInvariant();
+        }
+    }
 }
 
 /// <summary>
@@ -68,13 +88,22 @@ public sealed record FilaColaborador(
 /// <param name="DepartamentoId">Restringe a un departamento.</param>
 /// <param name="SucursalId">Restringe a una sucursal.</param>
 /// <param name="Estado">Restringe a una situacion laboral.</param>
+/// <param name="Tope">
+/// Cuantas filas como maximo. Lo usa el directorio rapido del resumen, que solo
+/// pinta las primeras: el recorte viaja a SQL como LIMIT, no se recorta la lista
+/// en memoria (CLAUDE.md, regla 13).
+/// </param>
 public sealed record FiltroColaboradores(
     string? Texto = null,
     int? DepartamentoId = null,
     int? SucursalId = null,
-    EstadoColaborador? Estado = null)
+    EstadoColaborador? Estado = null,
+    int? Tope = null)
 {
-    /// <summary>Verdadero si no hay ningun criterio activo.</summary>
+    /// <summary>
+    /// Verdadero si no hay ningun criterio activo. El tope no cuenta: recorta
+    /// cuantas filas se piden, no cuales.
+    /// </summary>
     public bool EstaVacio =>
         string.IsNullOrWhiteSpace(Texto)
         && DepartamentoId is null

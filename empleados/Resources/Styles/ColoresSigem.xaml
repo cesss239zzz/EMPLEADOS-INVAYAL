@@ -1,54 +1,105 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    Sistema visual de RH Manager.
+    Sistema visual de SIGEM.
 
-    Azul institucional sobre gris claro, tarjetas de esquinas redondeadas y aire
-    entre elementos. Se conserva la monoespaciada para los datos tabulares
-    (identidades, fechas, montos) porque ahi la alineacion en columna es
-    funcional, no decorativa.
+    Los valores salen del sistema de diseño "SIGEM Enterprise" que acompaña a las
+    maquetas: azul profundo institucional para la estructura, azul de accion para
+    lo pulsable, gris muy claro de lienzo y blanco para las tarjetas. La
+    profundidad se logra con capas tonales y un borde de 1px, no con sombras
+    pesadas.
 
-    Las claves conservan los nombres para no tocar las vistas: lo que cambia
-    son los valores.
+    Las claves conservan los nombres para no tocar las vistas ya escritas: lo que
+    cambia son los valores. Las claves nuevas se agregan al final de cada bloque.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <!-- ═══ PALETA ═══ -->
-    <Color x:Key="Tinta">#0F3D6E</Color>
-    <Color x:Key="Tinta2">#0B3159</Color>
-    <Color x:Key="Tinta3">#1B5E9C</Color>
-    <Color x:Key="Papel">#F4F6F9</Color>
+
+    <!-- Estructura: menu lateral y cabeceras. -->
+    <Color x:Key="Tinta">#0A2540</Color>
+    <Color x:Key="Tinta2">#000F22</Color>
+    <Color x:Key="Tinta3">#16304C</Color>
+
+    <!-- Lienzo y superficies. -->
+    <Color x:Key="Papel">#F8F9FB</Color>
     <Color x:Key="Superficie">#FFFFFF</Color>
-    <Color x:Key="Texto">#1C2530</Color>
-    <Color x:Key="Acero">#5A6673</Color>
-    <Color x:Key="Linea">#E2E7ED</Color>
-    <Color x:Key="LineaFuerte">#C9D2DC</Color>
-    <Color x:Key="AzulClaro">#E8F0F8</Color>
+    <Color x:Key="SuperficieSuave">#F3F4F6</Color>
 
-    <Color x:Key="Sello">#B4232A</Color>
-    <Color x:Key="Ambar">#B7791F</Color>
-    <Color x:Key="Verde">#1E7A4B</Color>
+    <!-- Texto. -->
+    <Color x:Key="Texto">#191C1E</Color>
+    <Color x:Key="Acero">#43474D</Color>
+    <Color x:Key="AceroSuave">#74777E</Color>
 
-    <Color x:Key="SelloTenue">#FCEDED</Color>
-    <Color x:Key="AmbarTenue">#FDF6E7</Color>
-    <Color x:Key="VerdeTenue">#E8F3ED</Color>
-    <Color x:Key="AceroTenue">#EDF1F5</Color>
+    <!-- Lineas. -->
+    <Color x:Key="Linea">#E1E4E8</Color>
+    <Color x:Key="LineaFuerte">#C4C6CE</Color>
 
-    <!-- ═══ TIPOGRAFIA ═══ -->
+    <!-- Azul de accion: enlaces, item activo del menu, boton primario. -->
+    <Color x:Key="Accion">#0453CD</Color>
+    <Color x:Key="AccionAlta">#356EE7</Color>
+    <Color x:Key="AzulClaro">#E8F0FE</Color>
+
+    <!-- Semaforo documental. Solo para estados, nunca decorativo. -->
+    <Color x:Key="Sello">#BA1A1A</Color>
+    <Color x:Key="Ambar">#9A5B00</Color>
+    <Color x:Key="Verde">#17603A</Color>
+
+    <Color x:Key="SelloTenue">#FFEDEA</Color>
+    <Color x:Key="AmbarTenue">#FEF4E4</Color>
+    <Color x:Key="VerdeTenue">#E6F5EC</Color>
+    <Color x:Key="AceroTenue">#EDEEF0</Color>
+
+    <!-- Texto del menu lateral sobre fondo oscuro. -->
+    <Color x:Key="TextoMenu">#9FB3C8</Color>
+    <Color x:Key="TextoMenuActivo">#FFFFFF</Color>
+
+    <!-- ═══ PINCELES ═══
+         Las figuras (Path, Ellipse) piden Brush, no Color. Se declaran aparte
+         para que Stroke y Fill reciban siempre el tipo correcto: StaticResource
+         asigna el objeto tal cual, sin pasar por conversor. -->
+    <SolidColorBrush x:Key="PincelTexto" Color="{StaticResource Texto}" />
+    <SolidColorBrush x:Key="PincelAcero" Color="{StaticResource Acero}" />
+    <SolidColorBrush x:Key="PincelAceroSuave" Color="{StaticResource AceroSuave}" />
+    <SolidColorBrush x:Key="PincelAccion" Color="{StaticResource Accion}" />
+    <SolidColorBrush x:Key="PincelTinta" Color="{StaticResource Tinta}" />
+    <SolidColorBrush x:Key="PincelBlanco" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="PincelMenu" Color="{StaticResource TextoMenu}" />
+    <SolidColorBrush x:Key="PincelSello" Color="{StaticResource Sello}" />
+    <SolidColorBrush x:Key="PincelAmbar" Color="{StaticResource Ambar}" />
+    <SolidColorBrush x:Key="PincelVerde" Color="{StaticResource Verde}" />
+    <SolidColorBrush x:Key="PincelLinea" Color="{StaticResource Linea}" />
+
+    <!-- ═══ TIPOGRAFIA ═══
+         El sistema de diseño pide Inter y JetBrains Mono. Ninguna de las dos
+         viaja con Windows y empotrarlas no esta autorizado, asi que se usan las
+         equivalentes del sistema: Segoe UI tiene la misma vocacion de interfaz
+         densa y Consolas cumple el papel de la monoespaciada para identidades,
+         fechas e importes, donde distinguir cero de o si importa. -->
     <x:String x:Key="FuenteTitular">Segoe UI</x:String>
     <x:String x:Key="FuenteTexto">Segoe UI</x:String>
     <x:String x:Key="FuenteDatos">Consolas</x:String>
 
     <Style x:Key="TituloPantalla" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FuenteTitular}" />
-        <Setter Property="FontSize" Value="26" />
+        <Setter Property="FontSize" Value="28" />
         <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-0.4" />
         <Setter Property="TextColor" Value="{StaticResource Texto}" />
     </Style>
 
     <Style x:Key="TituloSeccion" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FuenteTitular}" />
-        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-0.2" />
+        <Setter Property="TextColor" Value="{StaticResource Texto}" />
+    </Style>
+
+    <!-- Titulo pequeño de tarjeta, sobre la metrica grande. -->
+    <Style x:Key="TituloTarjeta" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteTitular}" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{StaticResource Texto}" />
     </Style>
@@ -57,15 +108,15 @@
         <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CharacterSpacing" Value="0.6" />
+        <Setter Property="CharacterSpacing" Value="0.7" />
         <Setter Property="TextTransform" Value="Uppercase" />
-        <Setter Property="TextColor" Value="{StaticResource Acero}" />
+        <Setter Property="TextColor" Value="{StaticResource AceroSuave}" />
     </Style>
 
     <Style x:Key="Cuerpo" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="LineHeight" Value="1.5" />
+        <Setter Property="LineHeight" Value="1.4" />
         <Setter Property="TextColor" Value="{StaticResource Texto}" />
     </Style>
 
@@ -73,57 +124,101 @@
         <Setter Property="TextColor" Value="{StaticResource Acero}" />
     </Style>
 
+    <!-- Texto de apoyo dentro de listas densas. -->
+    <Style x:Key="CuerpoMenor" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LineHeight" Value="1.35" />
+        <Setter Property="TextColor" Value="{StaticResource Acero}" />
+    </Style>
+
     <Style x:Key="Dato" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FuenteDatos}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="12.5" />
         <Setter Property="TextColor" Value="{StaticResource Texto}" />
     </Style>
 
     <Style x:Key="DatoSuave" TargetType="Label" BasedOn="{StaticResource Dato}">
-        <Setter Property="TextColor" Value="{StaticResource Acero}" />
+        <Setter Property="TextColor" Value="{StaticResource AceroSuave}" />
     </Style>
 
     <Style x:Key="NumeroMetrica" TargetType="Label">
         <Setter Property="FontFamily" Value="{StaticResource FuenteTitular}" />
-        <Setter Property="FontSize" Value="32" />
+        <Setter Property="FontSize" Value="34" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="{StaticResource Tinta}" />
+        <Setter Property="CharacterSpacing" Value="-1" />
+        <Setter Property="TextColor" Value="{StaticResource Texto}" />
+    </Style>
+
+    <!-- Valor de un campo de la ficha: caja gris clara de solo lectura. -->
+    <Style x:Key="ValorFicha" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource Texto}" />
+        <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
     <!-- ═══ BOTONES ═══ -->
     <Style x:Key="BotonPrimario" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="{StaticResource Tinta}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Accion}" />
         <Setter Property="TextColor" Value="#FFFFFF" />
         <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="20,11" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="18,10" />
         <Setter Property="MinimumHeightRequest" Value="40" />
         <Setter Property="BorderWidth" Value="0" />
     </Style>
 
     <Style x:Key="BotonSecundario" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
-        <Setter Property="TextColor" Value="{StaticResource Tinta}" />
+        <Setter Property="TextColor" Value="{StaticResource Texto}" />
         <Setter Property="BorderColor" Value="{StaticResource LineaFuerte}" />
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
         <Setter Property="FontSize" Value="14" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="18,10" />
-        <Setter Property="MinimumHeightRequest" Value="38" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="16,9" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
     </Style>
 
+    <!-- Boton del menu lateral. El resalte activo lo pone la pildora de detras. -->
     <Style x:Key="BotonMenu" TargetType="Button">
         <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="TextColor" Value="#CBDAE8" />
+        <Setter Property="TextColor" Value="{StaticResource TextoMenu}" />
         <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="CornerRadius" Value="0" />
         <Setter Property="BorderWidth" Value="0" />
-        <Setter Property="Padding" Value="18,0" />
-        <Setter Property="HeightRequest" Value="42" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
+    <!-- Boton sin marco, para acciones dentro de una tarjeta. -->
+    <Style x:Key="BotonPlano" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource Accion}" />
+        <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="MinimumHeightRequest" Value="30" />
+    </Style>
+
+    <!-- Boton de las acciones rapidas: fondo azul sobre la tarjeta oscura. -->
+    <Style x:Key="BotonAccionRapida" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource Tinta3}" />
+        <Setter Property="TextColor" Value="#FFFFFF" />
+        <Setter Property="FontFamily" Value="{StaticResource FuenteTexto}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="MinimumHeightRequest" Value="42" />
         <Setter Property="HorizontalOptions" Value="Fill" />
     </Style>
 
@@ -132,8 +227,22 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="TextColor" Value="{StaticResource Texto}" />
         <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
-        <Setter Property="PlaceholderColor" Value="{StaticResource Acero}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource AceroSuave}" />
         <Setter Property="HeightRequest" Value="40" />
+    </Style>
+
+    <!-- ═══ TARJETA ═══
+         Nivel 1 del sistema: blanco, borde de 1px y esquinas de 6px.
+
+         La forma del borde NO va en el estilo. Un Setter guarda una sola
+         instancia de RoundRectangle y la repartiria entre todas las tarjetas;
+         cada Border declara la suya con StrokeShape="RoundRectangle 6,6,6,6",
+         que el conversor resuelve por separado en cada uso. -->
+    <Style x:Key="Tarjeta" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+        <Setter Property="Stroke" Value="{StaticResource Linea}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="0" />
     </Style>
 
 </ResourceDictionary>

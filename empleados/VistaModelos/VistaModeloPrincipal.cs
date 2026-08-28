@@ -8,51 +8,41 @@ using Microsoft.Extensions.Logging;
 
 namespace empleados.VistaModelos;
 
-/// <summary>Secciones del menu lateral.</summary>
+/// <summary>
+/// Secciones del menu lateral. El orden es el del menu y el de las maquetas.
+/// </summary>
 public enum Seccion
 {
     Resumen,
     Colaboradores,
-    Contratos,
-    Documentos,
-    Avisos,
-    Catalogos,
-    Usuarios,
-    Reportes
-}
-
-/// <summary>Pestanas de la ficha del colaborador.</summary>
-public enum Pestana
-{
-    General,
-    Laboral,
     Documentos,
     Historial,
-    Emergencia
-}
-
-/// <summary>Un renglon del menu lateral.</summary>
-public sealed partial class ItemMenu : ObservableObject
-{
-    public ItemMenu(Seccion seccion, string titulo, string grupo)
-    {
-        Seccion = seccion;
-        Titulo = titulo;
-        Grupo = grupo;
-    }
-
-    public Seccion Seccion { get; }
-    public string Titulo { get; }
-    public string Grupo { get; }
-
-    /// <summary>El item activo lleva borde izquierdo con el color de la empresa.</summary>
-    [ObservableProperty]
-    public partial bool EsActivo { get; set; }
+    Alertas,
+    Reportes,
+    Configuracion
 }
 
 /// <summary>
-/// Contenedor de la aplicacion: barra superior, menu lateral y area de contenido,
-/// con la tabla de colaboradores y sus filtros.
+/// Pestanas de la ficha del colaborador.
+///
+/// La maqueta dibuja "Historial Salarial" y "Evaluaciones" como pestanas
+/// propias. Ninguna de las dos tiene respaldo en el modelo de datos: los
+/// cambios de salario ya viven dentro del historial laboral y de evaluaciones
+/// no hay tabla. Inventar campos esta prohibido (CLAUDE.md), asi que en su
+/// lugar van Contratos y Contactos, que si existen.
+/// </summary>
+public enum Pestana
+{
+    General,
+    Historial,
+    Contratos,
+    Contactos
+}
+
+/// <summary>
+/// Contenedor de la aplicacion: menu lateral, barra superior y area de
+/// contenido. Alberga las tres pantallas de las maquetas —resumen, directorio
+/// de colaboradores y ficha— y el panel de alertas.
 /// </summary>
 public sealed partial class VistaModeloPrincipal : VistaModeloBase
 {
@@ -62,8 +52,13 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     /// </summary>
     private static readonly TimeSpan EsperaAntesDeBuscar = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>Cuantas filas trae el directorio rapido del resumen.</summary>
+    private const int FilasDelDirectorio = 6;
+
     private readonly IServicioColaboradores _colaboradores;
     private readonly IServicioFicha _ficha;
+    private readonly IServicioResumen _servicioResumen;
+    private readonly IServicioAlertas _alertas;
     private readonly IContextoEmpresa _contextoEmpresa;
     private readonly SesionUsuario _sesion;
     private readonly IServicioNavegacion _navegacion;
@@ -77,9 +72,21 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     /// </summary>
     private bool _rellenandoFiltros;
 
+    /// <summary>
+    /// Empresa para la que ya corrio el motor de alertas en esta sesion. El
+    /// motor es idempotente, pero escribe: correrlo en cada aparicion de la
+    /// pantalla seria trabajo de base de datos regalado.
+    /// </summary>
+    private int _empresaConMotorCorrido;
+
+    /// <summary>Cuantos colaboradores tiene la empresa sin filtrar.</summary>
+    private int _totalSinFiltrar;
+
     public VistaModeloPrincipal(
         IServicioColaboradores colaboradores,
         IServicioFicha ficha,
+        IServicioResumen resumen,
+        IServicioAlertas alertas,
         IContextoEmpresa contextoEmpresa,
         SesionUsuario sesion,
         IServicioNavegacion navegacion,
@@ -89,30 +96,23 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     {
         _colaboradores = colaboradores;
         _ficha = ficha;
+        _servicioResumen = resumen;
+        _alertas = alertas;
         _contextoEmpresa = contextoEmpresa;
         _sesion = sesion;
         _navegacion = navegacion;
 
-        Titulo = "RH Manager";
+        // El constructor solo asigna dependencias y valores fijos. Nada de
+        // consultas: eso vive en CargarDatosAsync (CLAUDE.md, regla 13).
+        Titulo = "SIGEM";
         EmpresaActiva = string.Empty;
-        ColorEmpresa = "#0F3D6E";
+        ColorEmpresa = "#0453CD";
         Usuario = string.Empty;
         PerfilTexto = string.Empty;
-        TituloSeccion = "Resumen";
+        InicialesUsuario = string.Empty;
         Busqueda = string.Empty;
         ResumenConteo = string.Empty;
-
-        Menu =
-        [
-            new ItemMenu(Seccion.Resumen, "Resumen", "Personal") { EsActivo = true },
-            new ItemMenu(Seccion.Colaboradores, "Colaboradores", "Personal"),
-            new ItemMenu(Seccion.Contratos, "Contratos", "Archivo"),
-            new ItemMenu(Seccion.Documentos, "Documentos", "Archivo"),
-            new ItemMenu(Seccion.Avisos, "Avisos", "Archivo"),
-            new ItemMenu(Seccion.Catalogos, "Catalogos", "Administracion"),
-            new ItemMenu(Seccion.Usuarios, "Usuarios", "Administracion"),
-            new ItemMenu(Seccion.Reportes, "Reportes", "Administracion")
-        ];
+        Resumen = ResumenGeneral.Vacio;
 
         Estados =
         [
@@ -123,16 +123,24 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         ];
     }
 
-    public IReadOnlyList<ItemMenu> Menu { get; }
+    // ─── Colecciones ────────────────────────────────────────────────────────
 
     /// <summary>Filas de la tabla de colaboradores.</summary>
     public ObservableCollection<FilaColaborador> Colaboradores { get; } = [];
+
+    /// <summary>Las primeras filas, para el directorio rapido del resumen.</summary>
+    public ObservableCollection<FilaColaborador> Directorio { get; } = [];
+
+    /// <summary>Avisos pendientes, del mas urgente al menos urgente.</summary>
+    public ObservableCollection<LineaAviso> Avisos { get; } = [];
 
     public ObservableCollection<OpcionFiltro> Departamentos { get; } = [];
 
     public ObservableCollection<OpcionFiltro> Sucursales { get; } = [];
 
     public IReadOnlyList<OpcionFiltro> Estados { get; }
+
+    // ─── Identidad de la sesion ─────────────────────────────────────────────
 
     [ObservableProperty]
     public partial string EmpresaActiva { get; set; }
@@ -146,8 +154,17 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     [ObservableProperty]
     public partial string PerfilTexto { get; set; }
 
+    /// <summary>Iniciales del usuario, para la pastilla de la barra superior.</summary>
     [ObservableProperty]
-    public partial string TituloSeccion { get; set; }
+    public partial string InicialesUsuario { get; set; }
+
+    // ─── Resumen ────────────────────────────────────────────────────────────
+
+    /// <summary>Las cuatro metricas de la pantalla de resumen.</summary>
+    [ObservableProperty]
+    public partial ResumenGeneral Resumen { get; set; }
+
+    // ─── Busqueda y filtros ─────────────────────────────────────────────────
 
     /// <summary>Texto del buscador de la barra superior.</summary>
     [ObservableProperty]
@@ -162,39 +179,6 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     [ObservableProperty]
     public partial OpcionFiltro? EstadoSeleccionado { get; set; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EsColaboradores))]
-    [NotifyPropertyChangedFor(nameof(EsOtraSeccion))]
-    public partial Seccion SeccionActiva { get; set; }
-
-    /// <summary>Expediente abierto, o nulo si se esta viendo la tabla.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EsColaboradores))]
-    [NotifyPropertyChangedFor(nameof(EsOtraSeccion))]
-    [NotifyPropertyChangedFor(nameof(HayFicha))]
-    public partial DetalleColaborador? Ficha { get; set; }
-
-    public bool HayFicha => Ficha is not null;
-
-    /// <summary>La tabla se ve cuando la seccion es Colaboradores y no hay ficha abierta.</summary>
-    public bool EsColaboradores => SeccionActiva == Seccion.Colaboradores && Ficha is null;
-
-    public bool EsOtraSeccion => SeccionActiva != Seccion.Colaboradores && Ficha is null;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EsGeneral))]
-    [NotifyPropertyChangedFor(nameof(EsLaboral))]
-    [NotifyPropertyChangedFor(nameof(EsDocumentos))]
-    [NotifyPropertyChangedFor(nameof(EsHistorial))]
-    [NotifyPropertyChangedFor(nameof(EsEmergencia))]
-    public partial Pestana PestanaActiva { get; set; }
-
-    public bool EsGeneral => PestanaActiva == Pestana.General;
-    public bool EsLaboral => PestanaActiva == Pestana.Laboral;
-    public bool EsDocumentos => PestanaActiva == Pestana.Documentos;
-    public bool EsHistorial => PestanaActiva == Pestana.Historial;
-    public bool EsEmergencia => PestanaActiva == Pestana.Emergencia;
-
     /// <summary>Texto de la cabecera del panel: "3 de 9 registros".</summary>
     [ObservableProperty]
     public partial string ResumenConteo { get; set; }
@@ -207,12 +191,131 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     [ObservableProperty]
     public partial bool HayFiltros { get; set; }
 
-    /// <summary>Avisos pendientes. En E7 lo calcula el motor de alertas.</summary>
+    /// <summary>Verdadero cuando el directorio rapido del resumen quedo vacio.</summary>
     [ObservableProperty]
+    public partial bool SinResultadosDirectorio { get; set; }
+
+    /// <summary>Verdadero cuando no hay ningun aviso pendiente.</summary>
+    [ObservableProperty]
+    public partial bool SinAvisos { get; set; }
+
+    /// <summary>Avisos pendientes. Es el numero del globo de la campana.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HayAvisosPendientes))]
     public partial int AvisosPendientes { get; set; }
 
-    /// <summary>Cuantos colaboradores tiene la empresa sin filtrar.</summary>
-    private int _totalSinFiltrar;
+    public bool HayAvisosPendientes => AvisosPendientes > 0;
+
+    // ─── Seccion activa ─────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EsResumen))]
+    [NotifyPropertyChangedFor(nameof(EsColaboradores))]
+    [NotifyPropertyChangedFor(nameof(EsDocumentos))]
+    [NotifyPropertyChangedFor(nameof(EsHistorial))]
+    [NotifyPropertyChangedFor(nameof(EsAlertas))]
+    [NotifyPropertyChangedFor(nameof(EsReportes))]
+    [NotifyPropertyChangedFor(nameof(EsConfiguracion))]
+    [NotifyPropertyChangedFor(nameof(PanelResumen))]
+    [NotifyPropertyChangedFor(nameof(PanelColaboradores))]
+    [NotifyPropertyChangedFor(nameof(PanelAlertas))]
+    [NotifyPropertyChangedFor(nameof(PanelPendiente))]
+    [NotifyPropertyChangedFor(nameof(TituloSeccion))]
+    [NotifyPropertyChangedFor(nameof(SubtituloSeccion))]
+    public partial Seccion SeccionActiva { get; set; }
+
+    // Resalte del menu lateral. Sigue a la seccion aunque haya una ficha
+    // abierta: la ficha es parte de Colaboradores, no una seccion aparte.
+    public bool EsResumen => SeccionActiva == Seccion.Resumen;
+    public bool EsColaboradores => SeccionActiva == Seccion.Colaboradores;
+    public bool EsDocumentos => SeccionActiva == Seccion.Documentos;
+    public bool EsHistorial => SeccionActiva == Seccion.Historial;
+    public bool EsAlertas => SeccionActiva == Seccion.Alertas;
+    public bool EsReportes => SeccionActiva == Seccion.Reportes;
+    public bool EsConfiguracion => SeccionActiva == Seccion.Configuracion;
+
+    /// <summary>Titulo grande del area de contenido.</summary>
+    public string TituloSeccion => SeccionActiva switch
+    {
+        Seccion.Resumen => "Resumen General",
+        Seccion.Colaboradores => "Colaboradores",
+        Seccion.Documentos => "Documentos",
+        Seccion.Historial => "Historial",
+        Seccion.Alertas => "Alertas",
+        Seccion.Reportes => "Reportes",
+        _ => "Configuracion"
+    };
+
+    /// <summary>Linea de apoyo bajo el titulo.</summary>
+    public string SubtituloSeccion => SeccionActiva switch
+    {
+        Seccion.Resumen => "Vista consolidada de estado administrativo y alertas operativas.",
+        Seccion.Colaboradores => "Expedientes del personal de la empresa activa.",
+        Seccion.Alertas => "Vencimientos y efemerides que exigen atencion.",
+        Seccion.Documentos => "Archivo digitalizado del expediente.",
+        Seccion.Historial => "Movimientos laborales registrados.",
+        Seccion.Reportes => "Constancias, planillas y listados.",
+        _ => "Parametros del sistema."
+    };
+
+    // ─── Ficha ──────────────────────────────────────────────────────────────
+
+    /// <summary>Expediente abierto, o nulo si no se esta viendo ninguno.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PanelResumen))]
+    [NotifyPropertyChangedFor(nameof(PanelColaboradores))]
+    [NotifyPropertyChangedFor(nameof(PanelAlertas))]
+    [NotifyPropertyChangedFor(nameof(PanelPendiente))]
+    [NotifyPropertyChangedFor(nameof(PanelFicha))]
+    public partial DetalleColaborador? Ficha { get; set; }
+
+    // Que panel se ve. Uno solo a la vez; la ficha tapa a todos.
+    public bool PanelFicha => Ficha is not null;
+    public bool PanelResumen => Ficha is null && SeccionActiva == Seccion.Resumen;
+    public bool PanelColaboradores => Ficha is null && SeccionActiva == Seccion.Colaboradores;
+    public bool PanelAlertas => Ficha is null && SeccionActiva == Seccion.Alertas;
+
+    public bool PanelPendiente => Ficha is null
+        && SeccionActiva is Seccion.Documentos or Seccion.Historial
+            or Seccion.Reportes or Seccion.Configuracion;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EsPestanaGeneral))]
+    [NotifyPropertyChangedFor(nameof(EsPestanaHistorial))]
+    [NotifyPropertyChangedFor(nameof(EsPestanaContratos))]
+    [NotifyPropertyChangedFor(nameof(EsPestanaContactos))]
+    public partial Pestana PestanaActiva { get; set; }
+
+    public bool EsPestanaGeneral => PestanaActiva == Pestana.General;
+    public bool EsPestanaHistorial => PestanaActiva == Pestana.Historial;
+    public bool EsPestanaContratos => PestanaActiva == Pestana.Contratos;
+    public bool EsPestanaContactos => PestanaActiva == Pestana.Contactos;
+
+    /// <summary>Cuantos documentos tiene el expediente abierto.</summary>
+    public string ConteoDocumentos => Ficha is null
+        ? string.Empty
+        : "Ver todos los documentos (" + Ficha.Documentos.Count + ")";
+
+    /// <summary>Contacto de emergencia principal, el que la ficha destaca.</summary>
+    public LineaContacto? ContactoPrincipal => Ficha?.Contactos
+        .OrderByDescending(c => c.EsPrincipal)
+        .FirstOrDefault();
+
+    public bool HayContactoPrincipal => ContactoPrincipal is not null;
+
+    public bool SinContactoPrincipal => ContactoPrincipal is null;
+
+    /// <summary>"Maria Flores (Esposa)", como en la maqueta.</summary>
+    public string ContactoPrincipalTexto => ContactoPrincipal is null
+        ? string.Empty
+        : string.IsNullOrWhiteSpace(ContactoPrincipal.Parentesco)
+            ? ContactoPrincipal.Nombre
+            : ContactoPrincipal.Nombre + " (" + ContactoPrincipal.Parentesco + ")";
+
+    /// <summary>Verdadero si el expediente abierto no tiene documentos.</summary>
+    public bool SinDocumentos => Ficha is not null && Ficha.Documentos.Count == 0;
+
+    // ─── Carga ──────────────────────────────────────────────────────────────
 
     protected override async Task CargarDatosAsync()
     {
@@ -222,6 +325,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
             ColorEmpresa = _contextoEmpresa.ColorEmpresaActiva;
             Usuario = _sesion.NombreCompleto;
             PerfilTexto = DescribirPerfil();
+            InicialesUsuario = CalcularIniciales(_sesion.NombreCompleto);
         });
 
         await CargarSeccionAsync().ConfigureAwait(true);
@@ -230,17 +334,110 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     /// <summary>Cada seccion trae lo suyo cuando se abre (CLAUDE.md, regla 13).</summary>
     private async Task CargarSeccionAsync(CancellationToken cancelacion = default)
     {
-        if (SeccionActiva != Seccion.Colaboradores)
+        switch (SeccionActiva)
         {
-            return;
-        }
+            case Seccion.Resumen:
+                await CorrerMotorSiHaceFaltaAsync(cancelacion).ConfigureAwait(true);
+                await CargarResumenAsync(cancelacion).ConfigureAwait(true);
+                break;
 
+            case Seccion.Colaboradores:
+                await CargarColaboradoresAsync(cancelacion).ConfigureAwait(true);
+                break;
+
+            case Seccion.Alertas:
+                await CorrerMotorSiHaceFaltaAsync(cancelacion).ConfigureAwait(true);
+                await CargarAvisosAsync(cancelacion).ConfigureAwait(true);
+                break;
+
+            default:
+                // Las secciones todavia no construidas no consultan nada.
+                break;
+        }
+    }
+
+    /// <summary>Metricas, directorio rapido y avisos de la pantalla de resumen.</summary>
+    private async Task CargarResumenAsync(CancellationToken cancelacion)
+    {
+        var metricas = await _servicioResumen.ObtenerAsync(cancelacion).ConfigureAwait(true);
+
+        var directorio = await _colaboradores
+            .ObtenerAsync(new FiltroColaboradores(Tope: FilasDelDirectorio), cancelacion)
+            .ConfigureAwait(true);
+
+        cancelacion.ThrowIfCancellationRequested();
+
+        EnHiloUi(() =>
+        {
+            Resumen = metricas;
+
+            Directorio.Clear();
+            foreach (var fila in directorio)
+            {
+                Directorio.Add(fila);
+            }
+
+            SinResultadosDirectorio = Directorio.Count == 0;
+        });
+
+        await CargarAvisosAsync(cancelacion).ConfigureAwait(true);
+    }
+
+    /// <summary>Tabla de colaboradores con sus desplegables de filtro.</summary>
+    private async Task CargarColaboradoresAsync(CancellationToken cancelacion)
+    {
         if (Departamentos.Count == 0)
         {
             await CargarOpcionesDeFiltroAsync(cancelacion).ConfigureAwait(true);
         }
 
         await ConsultarAsync(cancelacion).ConfigureAwait(true);
+    }
+
+    /// <summary>Avisos pendientes de la empresa activa.</summary>
+    private async Task CargarAvisosAsync(CancellationToken cancelacion)
+    {
+        var avisos = await _alertas.ObtenerPendientesAsync(cancelacion).ConfigureAwait(true);
+
+        cancelacion.ThrowIfCancellationRequested();
+
+        // Lo urgente primero: primero lo vencido, despues lo que esta por
+        // vencer, y dentro de cada grupo por fecha.
+        var ordenados = avisos
+            .OrderByDescending(a => a.Nivel)
+            .ThenBy(a => a.FechaReferencia)
+            .ToList();
+
+        EnHiloUi(() =>
+        {
+            Avisos.Clear();
+            foreach (var aviso in ordenados)
+            {
+                Avisos.Add(aviso);
+            }
+
+            AvisosPendientes = Avisos.Count;
+            SinAvisos = Avisos.Count == 0;
+        });
+    }
+
+    /// <summary>
+    /// El motor calcula los avisos de la empresa activa. Es idempotente, pero
+    /// escribe: se corre una vez por empresa y por sesion, no en cada aparicion.
+    /// </summary>
+    private async Task CorrerMotorSiHaceFaltaAsync(CancellationToken cancelacion)
+    {
+        if (_empresaConMotorCorrido == _contextoEmpresa.EmpresaActivaId)
+        {
+            return;
+        }
+
+        var resultado = await _alertas.GenerarAsync(cancelacion).ConfigureAwait(true);
+        _empresaConMotorCorrido = _contextoEmpresa.EmpresaActivaId;
+
+        Registro.LogInformation(
+            "Motor de alertas corrido al abrir la pantalla: {Generados} nuevos, {Pendientes} pendientes.",
+            resultado.Generados, resultado.Pendientes);
     }
 
     /// <summary>Rellena los desplegables con los catalogos de la empresa activa.</summary>
@@ -278,7 +475,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         });
     }
 
-    /// <summary>Ejecuta la consulta con los criterios actuales.</summary>
+    /// <summary>Ejecuta la consulta de colaboradores con los criterios actuales.</summary>
     private async Task ConsultarAsync(CancellationToken cancelacion)
     {
         var filtro = ArmarFiltro();
@@ -312,12 +509,22 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
 
     // ─── Reaccion a los criterios ───────────────────────────────────────────
 
-    /// <summary>Escribir en el buscador reprograma la consulta, no la dispara.</summary>
+    /// <summary>
+    /// Escribir en el buscador reprograma la consulta, no la dispara. Ademas
+    /// lleva a la seccion de colaboradores: el buscador de la barra superior
+    /// busca personas, asi que el resultado tiene que quedar a la vista.
+    /// </summary>
     partial void OnBusquedaChanged(string value)
     {
         if (_rellenandoFiltros)
         {
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(value) && SeccionActiva != Seccion.Colaboradores)
+        {
+            Ficha = null;
+            SeccionActiva = Seccion.Colaboradores;
         }
 
         ProgramarBusqueda();
@@ -368,6 +575,11 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 await Task.Delay(espera, cancelacion).ConfigureAwait(true);
             }
 
+            if (Departamentos.Count == 0)
+            {
+                await CargarOpcionesDeFiltroAsync(cancelacion).ConfigureAwait(true);
+            }
+
             await ConsultarAsync(cancelacion).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
@@ -380,7 +592,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
 
             await Dialogo.AvisarAsync(
                 "No se pudo completar la busqueda",
-                "RH Manager no logro consultar los colaboradores. El detalle quedo en el archivo de registro.")
+                "SIGEM no logro consultar los colaboradores. El detalle quedo en el archivo de registro.")
                 .ConfigureAwait(true);
         }
     }
@@ -412,14 +624,35 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 {
                     PestanaActiva = Pestana.General;
                     Ficha = detalle;
+
+                    NotificarCamposDeLaFicha();
                 });
             },
             "apertura del expediente de " + (fila?.NombreCompleto ?? "desconocido"),
             "No se pudo abrir el expediente. El detalle quedo en el archivo de registro.");
 
-    /// <summary>Cierra la ficha y vuelve a la tabla.</summary>
+    /// <summary>Cierra la ficha y vuelve al directorio.</summary>
     [RelayCommand]
-    private void CerrarFicha() => Ficha = null;
+    private void CerrarFicha()
+    {
+        Ficha = null;
+        NotificarCamposDeLaFicha();
+    }
+
+    /// <summary>
+    /// Las propiedades derivadas de la ficha no las cubre NotifyPropertyChangedFor
+    /// porque son varias y cambian juntas: se avisan de una vez al abrir y al
+    /// cerrar el expediente.
+    /// </summary>
+    private void NotificarCamposDeLaFicha()
+    {
+        OnPropertyChanged(nameof(ConteoDocumentos));
+        OnPropertyChanged(nameof(ContactoPrincipal));
+        OnPropertyChanged(nameof(ContactoPrincipalTexto));
+        OnPropertyChanged(nameof(HayContactoPrincipal));
+        OnPropertyChanged(nameof(SinContactoPrincipal));
+        OnPropertyChanged(nameof(SinDocumentos));
+    }
 
     /// <summary>Cambia de pestana dentro de la ficha.</summary>
     [RelayCommand]
@@ -431,19 +664,30 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         }
     }
 
-    /// <summary>
-    /// La constancia de trabajo se genera en PDF con QuestPDF y codigo QR: es
-    /// la etapa E9. Hasta entonces el boton lo dice, no se queda mudo
-    /// (CLAUDE.md, regla 4).
-    /// </summary>
+    // ─── Navegacion interna ─────────────────────────────────────────────────
+
+    /// <summary>Cambia de seccion desde el menu lateral o desde un enlace.</summary>
     [RelayCommand]
-    private Task ConstanciaAsync()
+    private Task IrASeccionAsync(string? nombre)
         => EjecutarSeguroAsync(
-            () => Dialogo.AvisarAsync(
-                "Constancia de trabajo",
-                "La constancia en PDF con codigo QR verificable se habilita en la etapa de reportes."),
-            "solicitud de constancia de trabajo",
-            "No se pudo mostrar el aviso.");
+            async () =>
+            {
+                if (!Enum.TryParse<Seccion>(nombre, ignoreCase: true, out var seccion))
+                {
+                    Registro.LogWarning("Se pidio una seccion desconocida: {Nombre}", nombre ?? "(nula)");
+                    return;
+                }
+
+                EnHiloUi(() =>
+                {
+                    CerrarFicha();
+                    SeccionActiva = seccion;
+                });
+
+                await CargarSeccionAsync().ConfigureAwait(true);
+            },
+            "cambio a la seccion " + (nombre ?? "desconocida"),
+            "No se pudo abrir esa seccion. El detalle quedo en el archivo de registro.");
 
     /// <summary>Deja los criterios como al abrir la pantalla.</summary>
     [RelayCommand]
@@ -472,40 +716,24 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
             "limpieza de filtros",
             "No se pudieron limpiar los filtros.");
 
-    private string DescribirPerfil() => _sesion.Perfil switch
-    {
-        PerfilUsuario.SuperAdministrador => "Super Administrador",
-        PerfilUsuario.Administrador => "Administrador",
-        PerfilUsuario.SupervisorSucursal => "Supervisor de sucursal",
-        PerfilUsuario.Consulta => "Consulta",
-        _ => string.Empty
-    };
-
+    /// <summary>Marca un aviso como atendido y lo saca de la lista.</summary>
     [RelayCommand]
-    private Task IrASeccionAsync(ItemMenu? item)
+    private Task ResolverAvisoAsync(LineaAviso? aviso)
         => EjecutarSeguroAsync(
             async () =>
             {
-                if (item is null)
+                if (aviso is null)
                 {
                     return;
                 }
 
-                EnHiloUi(() =>
-                {
-                    foreach (var otro in Menu)
-                    {
-                        otro.EsActivo = ReferenceEquals(otro, item);
-                    }
-
-                    SeccionActiva = item.Seccion;
-                    TituloSeccion = item.Titulo;
-                });
-
-                await CargarSeccionAsync().ConfigureAwait(true);
+                await _alertas.ResolverAsync(aviso.Id).ConfigureAwait(true);
+                await CargarAvisosAsync(CancellationToken.None).ConfigureAwait(true);
             },
-            "cambio a la seccion " + (item?.Titulo ?? "desconocida"),
-            "No se pudo abrir esa seccion. El detalle quedo en el archivo de registro.");
+            "resolucion del aviso " + (aviso?.Id.ToString() ?? "desconocido"),
+            "No se pudo marcar el aviso como atendido.");
+
+    // ─── Sesion ─────────────────────────────────────────────────────────────
 
     [RelayCommand]
     private Task CambiarEmpresaAsync()
@@ -521,18 +749,66 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
             {
                 _sesion.Cerrar();
                 _contextoEmpresa.Limpiar();
+                _empresaConMotorCorrido = 0;
                 Registro.LogInformation("Sesion cerrada.");
                 await _navegacion.IrAsync(RutasNavegacion.Acceso).ConfigureAwait(true);
             },
             "cierre de sesion",
             "No se pudo cerrar la sesion.");
 
-    /// <summary>Todo boton visible tiene comando (CLAUDE.md, regla 4).</summary>
+    // ─── Acciones todavia sin etapa ─────────────────────────────────────────
+
+    /// <summary>
+    /// Ningun boton visible se queda mudo (CLAUDE.md, regla 4). Lo que aun no
+    /// esta construido lo dice con su nombre y su etapa, en vez de no hacer nada.
+    /// </summary>
     [RelayCommand]
-    private Task ProximamenteAsync()
+    private Task PendienteAsync(string? funcion)
         => EjecutarSeguroAsync(
-            () => Dialogo.AvisarAsync("Proximamente",
-                "Esta funcion se habilita en una etapa posterior de RH Manager."),
-            "aviso de funcion pendiente",
+            () => Dialogo.AvisarAsync(
+                funcion ?? "Funcion pendiente",
+                DescribirPendiente(funcion)),
+            "aviso de funcion pendiente: " + (funcion ?? "sin nombre"),
             "No se pudo mostrar el aviso.");
+
+    private static string DescribirPendiente(string? funcion) => funcion switch
+    {
+        "Constancia de trabajo" =>
+            "La constancia en PDF con codigo QR verificable se habilita en la etapa de reportes.",
+        "Exportar reporte" or "Exportar ficha" =>
+            "La exportacion a PDF y Excel se habilita en la etapa de reportes.",
+        "Nuevo registro" or "Editar informacion" =>
+            "El alta y la edicion de expedientes se habilitan en la etapa de captura. "
+                + "La demostracion trabaja sobre los datos ya cargados.",
+        "Registrar incidencia" =>
+            "El registro de incidencias y memorandos se habilita en una etapa posterior.",
+        "Programar vacaciones" =>
+            "La programacion de vacaciones se habilita en una etapa posterior.",
+        _ => "Esta funcion se habilita en una etapa posterior de SIGEM."
+    };
+
+    // ─── Auxiliares ─────────────────────────────────────────────────────────
+
+    private string DescribirPerfil() => _sesion.Perfil switch
+    {
+        PerfilUsuario.SuperAdministrador => "Super Administrador",
+        PerfilUsuario.Administrador => "Administrador",
+        PerfilUsuario.SupervisorSucursal => "Supervisor de sucursal",
+        PerfilUsuario.Consulta => "Consulta",
+        _ => string.Empty
+    };
+
+    /// <summary>Dos iniciales para la pastilla del usuario.</summary>
+    private static string CalcularIniciales(string nombre)
+    {
+        var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 0)
+        {
+            return "?";
+        }
+
+        var primera = partes[0][..1];
+        var segunda = partes.Length > 1 ? partes[^1][..1] : string.Empty;
+        return (primera + segunda).ToUpperInvariant();
+    }
 }

@@ -51,21 +51,54 @@ Un solo método: `ContextoRhManager.AjustarTiposParaSqlite`. SQLite no tiene tip
 | **E2** | `DbContext`, 14 entidades, filtro global, migración inicial y siembra completa | ✅ **Terminada** |
 | **E3** | Acceso con BCrypt, selector de empresas, filtro global | ✅ **Terminada** |
 | **E4** | Shell completo, sistema de diseño aplicado, tabla de colaboradores | ✅ **Terminada** |
-| **E5** | Colaboradores: tabla con búsqueda y filtros | Pendiente |
-| **E6** | Ficha del colaborador, cinco pestañas | Pendiente |
-| **E7** | Resumen con métricas reales, motor de alertas, panel de avisos | Pendiente |
+| **E5** | Colaboradores: tabla con búsqueda y filtros | ✅ **Terminada** |
+| **E6** | Ficha del colaborador, cuatro pestañas | ✅ **Terminada** |
+| **E7** | Resumen con métricas reales, motor de alertas, panel de avisos | ✅ **Terminada** |
 | **E8** | Notificación de Windows con `AppNotificationManager` | Pendiente |
+
+### Rediseño de las vistas sobre las maquetas de Stitch
+
+Las pantallas se rehicieron contra `stitch_sigem_digital_personnel_records`
+(dashboard administrativo y ficha del colaborador) y su `DESIGN.md`.
+
+| Tema | Decisión |
+|---|---|
+| Paleta | La del sistema "SIGEM Enterprise": estructura `#0A2540` sobre `#000F22`, acción `#0453CD`, lienzo `#F8F9FB`, tarjeta blanca con borde `#E1E4E8`. Las claves de `ColoresSigem.xaml` conservan su nombre; cambian los valores |
+| Tipografía | El sistema pide **Inter** y **JetBrains Mono**. Ninguna viaja con Windows y empotrarlas no está autorizado: se usan **Segoe UI** y **Consolas**, que cumplen el mismo papel |
+| Iconos | Dibujados con `Path` y datos de trazo en el propio XAML. No se usa fuente de iconos: una fuente que no resuelva deja cuadros vacíos en toda la interfaz |
+| Estructura | `PaginaPrincipal` es solo el contenedor —menú lateral y barra superior—. Cada pantalla es un `ContentView` en `Vistas/Paneles/` que hereda el `BindingContext`. Antes las tres vivían en un archivo de 700 líneas |
+| Pestañas de la ficha | La maqueta dibuja "Historial Salarial" y "Evaluaciones". No hay tabla para ninguna de las dos y **inventar campos está prohibido**: van Contratos y Contactos en su lugar. Los cambios de salario ya se ven dentro del historial laboral |
+| Documentos | Salen de la tira de pestañas y pasan al panel "Expediente Digital" de la derecha, como en la maqueta, con semáforo verde/ámbar/rojo |
+| Botones sin etapa | Exportar, Nuevo registro, Editar, Constancia, Incidencia y Vacaciones existen y responden: abren un aviso que nombra la etapa en que se habilitan. Ninguno queda mudo (regla 4) |
+| Motor de alertas | Corre una vez por empresa y por sesión, al abrir Resumen o Alertas. Es idempotente, pero escribe: correrlo en cada aparición sería trabajo regalado |
+| `StrokeShape` | Nunca en un `Setter` de estilo. Un `Setter` guarda una sola instancia de `RoundRectangle` y la repartiría entre todos los `Border`; cada uno declara la suya |
+
+Servicios nuevos: `IServicioResumen` / `ServicioResumen`, que calcula las cuatro
+métricas con `COUNT` en la base. `IServicioAlertas` **no estaba registrado en
+`MauiProgram`**: resolver el ViewModel habría lanzado excepción al abrir la
+pantalla principal. Ya está registrado, junto con el de resumen.
+
+`FiltroColaboradores` acepta un `Tope` que viaja a SQL como `LIMIT`, para el
+directorio rápido del resumen. Sin él habría que traer la tabla entera y quedarse
+con las primeras filas, que es justo lo que prohíbe la regla 13.
+
+### Sin compilar en este entorno
+
+El rediseño se escribió en un contenedor Linux **sin .NET SDK**, y el proyecto
+apunta a `net10.0-windows10.0.19041.0`: aquí no hay forma de compilarlo ni de
+abrirlo. Se verificó a mano que todo XAML es XML válido, que cada
+`StaticResource` resuelve contra los diccionarios, que cada `{Binding}` existe
+en el ViewModel o en el tipo del `x:DataType`, y que ningún `Stroke` recibe un
+`Color` donde se espera un `Brush`. **Falta correr `dotnet build` en Windows
+antes de dar la etapa por cerrada.**
 
 ### Cambios al plan original
 
-1. **Sin datos sembrados.** El prompt original pedía sembrar 2 empresas, 3 sucursales, catálogos y 12 colaboradores con datos exactos del prototipo. Queda anulado por decisión del cliente: la app va vacía.
+1. **Datos sembrados, con valores provisionales.** `SiembraDemostracion.cs` sí siembra 2 empresas, 3 sucursales, los catálogos y 12 colaboradores con historial, contratos y documentos. Los valores son inventados porque `SIGEM-prototipo.html` no estaba en el disco; el propio archivo lo advierte en su cabecera. Cuando aparezca el prototipo se reemplazan los arreglos y se regenera la migración.
 
 2. **El motor de alertas no corre al abrir la app.** No puede: el filtro global exige empresa activa, así que lo más temprano posible es justo después de elegir empresa, en E3. Además, correrlo al arrancar contradice la regla 13.
 
-3. **Decisión pendiente que bloquea el alcance de E3 a E6.** Con la app vacía y el alta de datos fuera de alcance, la aplicación nunca podría contener nada y toda pantalla quedaría en blanco. Hay que elegir:
-   - habilitar alta de empresa, catálogos y colaboradores, o
-   - habilitar solo altas, sin edición ni borrado, o
-   - dejarla vacía y de solo lectura, asumiendo que no hay nada que demostrar.
+3. **Resuelto: la demostración es de solo lectura sobre datos sembrados.** El bloqueo era que, con la app vacía y el alta fuera de alcance, toda pantalla quedaría en blanco. Lo resuelve la siembra por migración: hay 12 expedientes con historial, contratos y documentos que ver. El alta y la edición siguen fuera de alcance, y sus botones lo dicen en vez de fallar.
 
 ---
 

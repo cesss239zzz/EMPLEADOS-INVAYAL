@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Convertidores de presentacion, en un solo lugar.
+
+    Se declaran a nivel de aplicacion para que cualquier vista los alcance sin
+    volver a instanciarlos: la busqueda de recursos sube por el arbol hasta el
+    diccionario de la aplicacion. Todos son de un solo sentido.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:v="clr-namespace:empleados.Vistas">
+
+    <!-- Situacion laboral y completitud del expediente. -->
+    <v:ConvertidorColorExpediente x:Key="ColorExpediente" />
+    <v:ConvertidorColorEstado x:Key="ColorEstado" />
+    <v:ConvertidorFondoEstado x:Key="FondoEstado" />
+
+    <!-- Ficha: pestanas y linea de tiempo. -->
+    <v:ConvertidorTextoPestana x:Key="TextoPestana" />
+    <v:ConvertidorColorPunto x:Key="ColorPunto" />
+
+    <!-- Semaforo documental del expediente digital. -->
+    <v:ConvertidorPincelDocumento x:Key="PincelDocumento" />
+    <v:ConvertidorColorDocumento x:Key="ColorDocumento" />
+    <v:ConvertidorFondoDocumento x:Key="FondoDocumento" />
+
+    <!-- Gravedad de los avisos. -->
+    <v:ConvertidorColorAviso x:Key="ColorAviso" />
+    <v:ConvertidorPincelAviso x:Key="PincelAviso" />
+    <v:ConvertidorFondoAviso x:Key="FondoAviso" />
+
+    <!-- Menu lateral. -->
+    <v:ConvertidorTextoMenu x:Key="TextoMenu" />
+    <v:ConvertidorPincelMenu x:Key="PincelMenu" />
+
+</ResourceDictionary>

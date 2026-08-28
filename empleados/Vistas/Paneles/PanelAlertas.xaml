@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Panel de pendientes: la lista completa de avisos del motor de alertas para
+    la empresa activa, con el mismo semaforo de la maqueta —rojo lo vencido,
+    ambar lo proximo, azul lo informativo— y el boton para darlos por atendidos.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:srv="clr-namespace:empleados.Servicios"
+             x:Class="empleados.Vistas.Paneles.PanelAlertas"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <Grid RowDefinitions="Auto,*" Padding="32,26,32,32" RowSpacing="20">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
+            <Label Text="{Binding SubtituloSeccion}" Style="{StaticResource CuerpoSuave}" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="1" Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6">
+            <Grid RowDefinitions="Auto,*">
+
+                <Grid Grid.Row="0" Padding="22,18" ColumnDefinitions="*,Auto">
+                    <Label Grid.Column="0" Text="Avisos pendientes"
+                           Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="{Binding AvisosPendientes, StringFormat='{}{0} sin atender'}"
+                           Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                </Grid>
+                <BoxView Grid.Row="0" Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
+
+                <CollectionView Grid.Row="1" ItemsSource="{Binding Avisos}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="srv:LineaAviso">
+                            <Grid>
+                                <Grid ColumnDefinitions="4,26,*,150,140,Auto"
+                                      ColumnSpacing="14"
+                                      Padding="22,16">
+                                    <BoxView Grid.Column="0"
+                                             Color="{Binding Nivel, Converter={StaticResource ColorAviso}}"
+                                             Margin="-22,-16,0,-16" />
+
+                                    <Path Grid.Column="1"
+                                          Data="M10,2.5 A7.5,7.5 0 1,0 10,17.5 A7.5,7.5 0 1,0 10,2.5 Z M10,6 V11 M10,13.4 V13.8"
+                                          Stroke="{Binding Nivel, Converter={StaticResource PincelAviso}}"
+                                          StrokeThickness="1.6"
+                                          WidthRequest="20" HeightRequest="20"
+                                          VerticalOptions="Start" />
+
+                                    <VerticalStackLayout Grid.Column="2" Spacing="3">
+                                        <Label Text="{Binding Titulo}"
+                                               Style="{StaticResource Cuerpo}"
+                                               FontAttributes="Bold" />
+                                        <Label Text="{Binding Descripcion}" Style="{StaticResource CuerpoMenor}" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Column="3" Spacing="3">
+                                        <Label Text="{Binding TipoTexto}" Style="{StaticResource EtiquetaCampo}" />
+                                        <Label Text="{Binding Colaborador}" Style="{StaticResource CuerpoMenor}"
+                                               LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+
+                                    <VerticalStackLayout Grid.Column="4" Spacing="3">
+                                        <Label Text="{Binding FechaTexto}" Style="{StaticResource Dato}" />
+                                        <Label Text="{Binding PlazoTexto}"
+                                               Style="{StaticResource CuerpoMenor}"
+                                               FontSize="12"
+                                               TextColor="{Binding Nivel, Converter={StaticResource ColorAviso}}" />
+                                    </VerticalStackLayout>
+
+                                    <Button Grid.Column="5"
+                                            Text="Marcar atendido"
+                                            Style="{StaticResource BotonSecundario}"
+                                            FontSize="12"
+                                            Padding="12,7"
+                                            MinimumHeightRequest="34"
+                                            VerticalOptions="Center"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=ResolverAvisoCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                                <BoxView Color="{StaticResource Linea}" HeightRequest="1" VerticalOptions="End" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <VerticalStackLayout Grid.Row="1"
+                                     IsVisible="{Binding SinAvisos}"
+                                     Padding="22,30"
+                                     Spacing="6">
+                    <Label Text="Nada pendiente" Style="{StaticResource TituloSeccion}"
+                           TextColor="{StaticResource AceroSuave}" />
+                    <Label Style="{StaticResource CuerpoSuave}"
+                           Text="El motor de alertas no encontro vencimientos ni efemerides por atender en esta empresa." />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentView>

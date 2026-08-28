@@ -269,7 +269,8 @@ public sealed class ServicioAlertas : IServicioAlertas
                 a.FechaReferencia,
                 a.Colaborador == null
                     ? string.Empty
-                    : a.Colaborador.PrimerNombre + " " + a.Colaborador.PrimerApellido))
+                    : a.Colaborador.PrimerNombre + " " + a.Colaborador.PrimerApellido,
+                a.FechaGeneracion))
             .ToListAsync(cancelacion)
             .ConfigureAwait(false);
 
