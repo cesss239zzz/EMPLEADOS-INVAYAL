@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:srv="clr-namespace:empleados.Servicios"
+             x:Class="empleados.Vistas.PaginaSelectorEmpresa"
+             x:DataType="vm:VistaModeloSelectorEmpresa"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Papel}"
+             Title="Empresas">
+
+    <Grid RowDefinitions="58,3,*">
+
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Tinta}" ColumnDefinitions="Auto,*">
+            <HorizontalStackLayout Grid.Column="0" Spacing="10" Padding="16,0" VerticalOptions="Center">
+                <Image Source="logo.png" WidthRequest="22" HeightRequest="22" Aspect="AspectFit" />
+                <Label Text="RH Manager"
+                       FontFamily="{StaticResource FuenteTitular}"
+                       FontSize="19"
+                       FontAttributes="Bold"                       TextColor="#FFFFFF"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label Grid.Column="1"
+                   Text="{Binding Bienvenida}"
+                   FontFamily="{StaticResource FuenteTitular}"
+                   FontSize="10"
+                   CharacterSpacing="1.2"                   TextColor="#7C8F9C"
+                   VerticalOptions="Center"
+                   HorizontalOptions="End"
+                   Margin="0,0,18,0" />
+        </Grid>
+
+        <BoxView Grid.Row="1" Color="{StaticResource Tinta3}" />
+
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Padding="30,26" Spacing="18">
+
+                <Label Text="Seleccione la empresa" Style="{StaticResource TituloPantalla}" />
+                <Label Style="{StaticResource CuerpoSuave}"
+                       Text="Todo lo que vea a partir de aqui pertenece unicamente a la empresa que elija." />
+
+                <Label Text="No tiene ninguna empresa habilitada. Comuniquese con el administrador."
+                       Style="{StaticResource Cuerpo}"
+                       IsVisible="{Binding SinEmpresas}" />
+
+                <CollectionView ItemsSource="{Binding Empresas}" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="srv:TarjetaEmpresa">
+                            <Border BackgroundColor="{StaticResource Superficie}"
+                                    Stroke="{StaticResource Linea}"
+                                    StrokeThickness="1"
+                                    Padding="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8" />
+                                </Border.StrokeShape>
+
+                                <Grid ColumnDefinitions="3,*,Auto">
+                                    <BoxView Grid.Column="0" Color="{Binding ColorPrimario}" />
+
+                                    <VerticalStackLayout Grid.Column="1" Padding="20,16" Spacing="5">
+                                        <Label Text="{Binding Nombre}" Style="{StaticResource TituloSeccion}" />
+                                        <Label Text="{Binding Rtn, StringFormat='RTN {0}'}"
+                                               Style="{StaticResource DatoSuave}" />
+                                        <Label Style="{StaticResource CuerpoSuave}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding Colaboradores}" FontAttributes="Bold" />
+                                                    <Span Text=" colaboradores activos   ·   " />
+                                                    <Span Text="{Binding Sucursales}" FontAttributes="Bold" />
+                                                    <Span Text=" sucursales" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+
+                                    <Button Grid.Column="2"
+                                            Text="Entrar"
+                                            Style="{StaticResource BotonPrimario}"
+                                            Margin="0,0,20,0"
+                                            VerticalOptions="Center"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=SeleccionarCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <ActivityIndicator IsRunning="{Binding EstaOcupado}"
+                                   IsVisible="{Binding EstaOcupado}"
+                                   Color="{StaticResource Tinta}"
+                                   HeightRequest="20"
+                                   HorizontalOptions="Start" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             x:Class="empleados.Vistas.PaginaDiagnostico"
+             x:DataType="vm:VistaModeloDiagnostico"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Papel}"
+             Title="Diagnostico">
+
+    <Grid RowDefinitions="58,3,*">
+
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Tinta}" ColumnDefinitions="Auto,*">
+            <HorizontalStackLayout Grid.Column="0" Spacing="10" Padding="16,0" VerticalOptions="Center">
+                <Image Source="logo.png" WidthRequest="22" HeightRequest="22" Aspect="AspectFit" />
+                <Label Text="RH Manager"
+                       FontFamily="{StaticResource FuenteTitular}"
+                       FontSize="19" FontAttributes="Bold"                       TextColor="#FFFFFF" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label Grid.Column="1" Text="Diagnostico del sistema"
+                   FontFamily="{StaticResource FuenteTitular}"
+                   FontSize="10" CharacterSpacing="1.2"                   TextColor="#7C8F9C" VerticalOptions="Center"
+                   HorizontalOptions="End" Margin="0,0,18,0" />
+        </Grid>
+
+        <BoxView Grid.Row="1" Color="{StaticResource Sello}" />
+
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Padding="30,26" Spacing="16">
+
+                <!-- Que pasa -->
+                <Grid ColumnDefinitions="3,*">
+                    <BoxView Grid.Column="0" Color="{StaticResource Sello}" />
+                    <VerticalStackLayout Grid.Column="1"
+                                         BackgroundColor="{StaticResource Superficie}"
+                                         Padding="20,16" Spacing="6">
+                        <Label Text="{Binding Encabezado}" Style="{StaticResource TituloSeccion}"
+                               TextColor="{StaticResource Sello}" />
+                        <Label Text="{Binding Explicacion}" Style="{StaticResource Cuerpo}" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Que hacer -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Linea}" StrokeThickness="1" Padding="0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout>
+                        <Grid Padding="18,13">
+                            <Label Text="Como resolverlo" Style="{StaticResource TituloSeccion}" />
+                        </Grid>
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+                        <Label Text="{Binding ComoResolverlo}" Style="{StaticResource Dato}" Padding="18,16" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Acciones -->
+                <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                    <Button Text="Reintentar" Style="{StaticResource BotonPrimario}"
+                            Command="{Binding ReintentarCommand}" IsEnabled="{Binding NoEstaOcupado}"
+                            Margin="0,0,8,8" />
+                    <Button Text="Abrir registros" Style="{StaticResource BotonSecundario}"
+                            Command="{Binding AbrirCarpetaRegistrosCommand}" IsEnabled="{Binding NoEstaOcupado}"
+                            Margin="0,0,8,8" />
+                    <Button Text="Copiar detalle" Style="{StaticResource BotonSecundario}"
+                            Command="{Binding CopiarDetalleCommand}" IsEnabled="{Binding NoEstaOcupado}"
+                            Margin="0,0,8,8" />
+                    <Button Text="Ver traza" Style="{StaticResource BotonSecundario}"
+                            Command="{Binding AlternarDetalleCommand}" IsVisible="{Binding HayDetalleTecnico}"
+                            Margin="0,0,8,8" />
+                    <ActivityIndicator IsRunning="{Binding EstaOcupado}" IsVisible="{Binding EstaOcupado}"
+                                       Color="{StaticResource Tinta}" HeightRequest="20" Margin="4,0,0,8" />
+                </FlexLayout>
+
+                <Border BackgroundColor="{StaticResource Tinta}" StrokeThickness="0" Padding="16"
+                        IsVisible="{Binding DetalleVisible}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <Label Text="{Binding DetalleTecnico}"
+                           FontFamily="{StaticResource FuenteDatos}"
+                           FontSize="11" TextColor="#B7C4CE" />
+                </Border>
+
+                <!-- Rutas -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Linea}" StrokeThickness="1" Padding="18,16">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Archivo de configuracion" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Text="{Binding ArchivoConfiguracion}" Style="{StaticResource Dato}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" Margin="0,6" />
+                        <Label Text="Carpeta de registros" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Text="{Binding CarpetaRegistros}" Style="{StaticResource Dato}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Pruebas de E1 -->
+                <Grid ColumnDefinitions="3,*">
+                    <BoxView Grid.Column="0" Color="{StaticResource Ambar}" />
+                    <VerticalStackLayout Grid.Column="1" BackgroundColor="{StaticResource AmbarTenue}"
+                                         Padding="20,16" Spacing="10">
+                        <Label Text="Pruebas de la etapa E1" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Style="{StaticResource Cuerpo}"
+                               Text="Estos dos botones provocan errores a proposito. En ambos casos el fallo queda en el archivo de registro y la aplicacion sigue abierta." />
+                        <HorizontalStackLayout Spacing="8">
+                            <Button Text="Error controlado" Style="{StaticResource BotonSecundario}"
+                                    Command="{Binding ProvocarErrorControladoCommand}"
+                                    IsEnabled="{Binding NoEstaOcupado}" />
+                            <Button Text="Error no controlado" Style="{StaticResource BotonSecundario}"
+                                    Command="{Binding ProvocarErrorNoControladoCommand}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

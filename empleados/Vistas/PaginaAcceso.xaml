@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             x:Class="empleados.Vistas.PaginaAcceso"
+             x:DataType="vm:VistaModeloAcceso"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Tinta}"
+             Title="Acceso">
+
+    <Grid RowDefinitions="*,Auto,*">
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Superficie}"
+                Stroke="{StaticResource LineaFuerte}"
+                StrokeThickness="1"
+                WidthRequest="400"
+                Padding="0"
+                HorizontalOptions="Center">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+
+            <VerticalStackLayout>
+
+                <!-- Cabecera del panel -->
+                <VerticalStackLayout Padding="34,26,34,20" Spacing="8">
+                    <Image Source="logo.png" WidthRequest="42" HeightRequest="42"
+                           Aspect="AspectFit" HorizontalOptions="Start" />
+                    <Label Text="RH Manager"
+                           FontFamily="{StaticResource FuenteTitular}"
+                           FontSize="29"
+                           FontAttributes="Bold"                           TextColor="{StaticResource Tinta}" />
+                    <Label Text="Expediente Digital del Personal"
+                           Style="{StaticResource EtiquetaCampo}" />
+                </VerticalStackLayout>
+
+                <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                <VerticalStackLayout Padding="34,22,34,30" Spacing="6">
+
+                    <Label Text="Usuario" Style="{StaticResource EtiquetaCampo}" />
+                    <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1" Padding="8,0" Margin="0,0,0,10">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+                        <Entry Text="{Binding NombreUsuario}"
+                               Style="{StaticResource Campo}"
+                               Placeholder="Nombre de usuario"
+                               IsEnabled="{Binding NoEstaOcupado}"
+                               ReturnCommand="{Binding AccederCommand}" />
+                    </Border>
+
+                    <Label Text="Contrasena" Style="{StaticResource EtiquetaCampo}" />
+                    <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1" Padding="8,0" Margin="0,0,0,4">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8" />
+                        </Border.StrokeShape>
+                        <Entry Text="{Binding Contrasena}"
+                               Style="{StaticResource Campo}"
+                               Placeholder="Contrasena"
+                               IsPassword="True"
+                               IsEnabled="{Binding NoEstaOcupado}"
+                               ReturnCommand="{Binding AccederCommand}" />
+                    </Border>
+
+                    <!-- Nunca dice si fallo el usuario o la contrasena -->
+                    <Grid IsVisible="{Binding HayMensaje}" ColumnDefinitions="3,*" Margin="0,8">
+                        <BoxView Grid.Column="0" Color="{StaticResource Sello}" />
+                        <Label Grid.Column="1"
+                               Text="{Binding Mensaje}"
+                               Style="{StaticResource Cuerpo}"
+                               TextColor="{StaticResource Sello}"
+                               BackgroundColor="{StaticResource SelloTenue}"
+                               Padding="10,8" />
+                    </Grid>
+
+                    <Button Text="Entrar"
+                            Style="{StaticResource BotonPrimario}"
+                            Command="{Binding AccederCommand}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Margin="0,10,0,0" />
+
+                    <ActivityIndicator IsRunning="{Binding EstaOcupado}"
+                                       IsVisible="{Binding EstaOcupado}"
+                                       Color="{StaticResource Tinta}"
+                                       HeightRequest="20" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+
+</ContentPage>

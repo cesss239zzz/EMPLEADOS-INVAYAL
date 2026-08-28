@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- SIGEM se presenta en Windows. Android queda para fase posterior (CLAUDE.md). -->
+		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+		<OutputType>Exe</OutputType>
+		<RootNamespace>empleados</RootNamespace>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<MauiXamlInflator>SourceGen</MauiXamlInflator>
+
+		<!-- Desempaquetado y autocontenido: se copia la carpeta y corre.
+		     No requiere instalar el Windows App Runtime en la maquina destino. -->
+		<WindowsPackageType>None</WindowsPackageType>
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+		<SelfContained>true</SelfContained>
+
+		<!-- Identidad visible -->
+		<ApplicationTitle>RH Manager</ApplicationTitle>
+		<ApplicationId>hn.invayal.sigem</ApplicationId>
+		<ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+
+		<SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- El icono usa el logotipo del maletin recortado sobre fondo claro. -->
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.png" Color="#F4F6F9" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0F3D6E" BaseSize="128,128" />
+		<MauiImage Include="Resources\Images\*" />
+		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+		<MauiFont Include="Resources\Fonts\*" />
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- La configuracion viaja junto al ejecutable para poder corregirla sin recompilar. -->
+		<Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="appsettings.Local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.Local.json')" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+
+		<!-- MVVM obligatorio segun CLAUDE.md -->
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+
+		<!-- Configuracion desde appsettings.json -->
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.0" />
+
+		<!-- Registro a archivo -->
+		<PackageReference Include="Serilog" Version="4.3.0" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
+		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+
+		<!-- Datos. SQLite para la demo. Se mantiene EF Core 9 a proposito: volver a MySQL
+		     con Pomelo (que exige el rango [9.0.0, 9.0.999]) es cambiar un paquete y nada mas. -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.19" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.19">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.19" />
+	</ItemGroup>
+
+</Project>

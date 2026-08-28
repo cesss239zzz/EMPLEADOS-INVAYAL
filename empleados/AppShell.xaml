@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="empleados.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    Title="RH Manager">
+
+    <!--
+        Los ShellContent no se declaran aqui con DataTemplate sino que se agregan en
+        AppShell.xaml.cs con una fabrica que resuelve cada pagina del contenedor de
+        dependencias. Asi ninguna pagina se construye con Activator y se cumple la
+        regla 1 de CLAUDE.md sin depender de como MAUI resuelva los DataTemplate.
+    -->
+
+</Shell>

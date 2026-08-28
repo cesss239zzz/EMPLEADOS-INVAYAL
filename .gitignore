@@ -1,0 +1,41 @@
+## Compilación .NET
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## MAUI / Windows
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+AppPackages/
+BundleArtifacts/
+
+## Secretos y configuración local
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.snk
+.env
+
+## Registros y archivos generados en tiempo de ejecución
+logs/
+*.log
+
+## Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
