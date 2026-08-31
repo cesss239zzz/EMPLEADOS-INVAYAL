@@ -40,7 +40,7 @@ internal static class SiembraSistema
     /// bases que ya estan creadas.
     /// </summary>
     private const string HashContrasenaInicial =
-        "$2a$11$GpgRg/FpTrjEdGCSqifH7ekvwN5VZJtyz..1bYZdLrpEhwb22F8ri";
+        "$2a$11$l09yi7nbnHdRTs./Q8HWEOL4yotSx1COXRbV/LP7N.wuZZJekDU9C";
 
     public static void Aplicar(ModelBuilder constructor)
     {

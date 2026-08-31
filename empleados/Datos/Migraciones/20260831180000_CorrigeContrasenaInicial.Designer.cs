@@ -755,7 +755,7 @@ namespace empleados.Datos.Migraciones
                             Correo = "cregalado@invayal.hn",
                             DebeCambiarContrasena = true,
                             FechaCreacion = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            HashContrasena = "$2a$11$GpgRg/FpTrjEdGCSqifH7ekvwN5VZJtyz..1bYZdLrpEhwb22F8ri",
+                            HashContrasena = "$2a$11$l09yi7nbnHdRTs./Q8HWEOL4yotSx1COXRbV/LP7N.wuZZJekDU9C",
                             IntentosFallidos = 0,
                             NombreCompleto = "Cesar Regalado",
                             NombreUsuario = "cregalado",

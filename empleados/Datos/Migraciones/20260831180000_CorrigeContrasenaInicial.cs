@@ -30,7 +30,7 @@ namespace empleados.Datos.Migraciones
                 keyColumn: "Id",
                 keyValue: 1,
                 column: "HashContrasena",
-                value: "$2a$11$GpgRg/FpTrjEdGCSqifH7ekvwN5VZJtyz..1bYZdLrpEhwb22F8ri");
+                value: "$2a$11$l09yi7nbnHdRTs./Q8HWEOL4yotSx1COXRbV/LP7N.wuZZJekDU9C");
 
             // Los intentos fallidos acumulados y un bloqueo vigente dejarian la
             // cuenta trabada justo despues de arreglarle la contrasena.
