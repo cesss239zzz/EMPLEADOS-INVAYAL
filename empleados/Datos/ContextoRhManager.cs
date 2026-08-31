@@ -12,11 +12,11 @@ namespace empleados.Datos;
 /// es seguro entre hilos y compartirlo produce fallos intermitentes que son el
 /// peor tipo de error para depurar (CLAUDE.md, regla 2).
 /// </summary>
-public class ContextoSigem : DbContext
+public class ContextoRhManager : DbContext
 {
     private readonly IContextoEmpresa _contextoEmpresa;
 
-    public ContextoSigem(DbContextOptions<ContextoSigem> opciones, IContextoEmpresa contextoEmpresa)
+    public ContextoRhManager(DbContextOptions<ContextoRhManager> opciones, IContextoEmpresa contextoEmpresa)
         : base(opciones)
     {
         _contextoEmpresa = contextoEmpresa;
@@ -35,6 +35,10 @@ public class ContextoSigem : DbContext
     public DbSet<MovimientoLaboral> MovimientosLaborales => Set<MovimientoLaboral>();
     public DbSet<Contrato> Contratos => Set<Contrato>();
     public DbSet<DocumentoDigitalizado> Documentos => Set<DocumentoDigitalizado>();
+    public DbSet<ContenidoDocumento> ContenidosDocumento => Set<ContenidoDocumento>();
+    public DbSet<MovimientoDocumento> MovimientosDocumento => Set<MovimientoDocumento>();
+    public DbSet<Incidencia> Incidencias => Set<Incidencia>();
+    public DbSet<Vacacion> Vacaciones => Set<Vacacion>();
     public DbSet<Aviso> Avisos => Set<Aviso>();
 
     protected override void OnModelCreating(ModelBuilder constructor)
@@ -46,7 +50,7 @@ public class ContextoSigem : DbContext
         AplicarFiltrosDeEmpresa(constructor);
         AjustarTiposParaSqlite(constructor);
 
-        SiembraDemostracion.Aplicar(constructor);
+        SiembraSistema.Aplicar(constructor);
     }
 
     /// <summary>Tablas y columnas en snake_case espanol (CLAUDE.md).</summary>
@@ -113,14 +117,22 @@ public class ContextoSigem : DbContext
         constructor.Entity<Colaborador>(e =>
         {
             e.ToTable("colaborador");
+            // La identidad sigue siendo unica por empresa, pero ahora es opcional
+            // (CR-04). SQLite no considera iguales dos NULL en un indice unico,
+            // asi que pueden coexistir varios expedientes sin identidad todavia
+            // y en cuanto se capture una, se sigue impidiendo el duplicado.
             e.HasIndex(x => new { x.EmpresaId, x.Identidad }).IsUnique();
             e.HasIndex(x => new { x.EmpresaId, x.Codigo }).IsUnique();
             e.Property(x => x.Codigo).HasMaxLength(20).IsRequired();
-            e.Property(x => x.Identidad).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Identidad).HasMaxLength(20);
             e.Property(x => x.PrimerNombre).HasMaxLength(60).IsRequired();
             e.Property(x => x.SegundoNombre).HasMaxLength(60);
             e.Property(x => x.PrimerApellido).HasMaxLength(60).IsRequired();
             e.Property(x => x.SegundoApellido).HasMaxLength(60);
+
+            // El buscador consulta por esta columna, asi que lleva indice.
+            e.Property(x => x.TextoBusqueda).HasMaxLength(320).IsRequired();
+            e.HasIndex(x => new { x.EmpresaId, x.TextoBusqueda });
 
             // Propiedad calculada: se arma en memoria, no existe como columna.
             e.Ignore(x => x.NombreCompleto);
@@ -129,7 +141,46 @@ public class ContextoSigem : DbContext
         constructor.Entity<ContactoEmergencia>().ToTable("contacto_emergencia");
         constructor.Entity<MovimientoLaboral>().ToTable("movimiento_laboral");
         constructor.Entity<Contrato>().ToTable("contrato");
-        constructor.Entity<DocumentoDigitalizado>().ToTable("documento_digitalizado");
+
+        constructor.Entity<DocumentoDigitalizado>(e =>
+        {
+            e.ToTable("documento_digitalizado");
+            e.Property(x => x.NombreArchivo).HasMaxLength(260).IsRequired();
+            e.Property(x => x.Extension).HasMaxLength(16).IsRequired();
+            e.Property(x => x.Descripcion).HasMaxLength(500);
+        });
+
+        constructor.Entity<ContenidoDocumento>(e =>
+        {
+            e.ToTable("contenido_documento");
+
+            // Un contenido por documento, garantizado por la base y no por la
+            // buena voluntad del servicio.
+            e.HasIndex(x => x.DocumentoId).IsUnique();
+            e.Property(x => x.Bytes).IsRequired();
+        });
+
+        constructor.Entity<MovimientoDocumento>(e =>
+        {
+            e.ToTable("movimiento_documento");
+            e.Property(x => x.NombreDocumento).HasMaxLength(260).IsRequired();
+            e.Property(x => x.NombreUsuario).HasMaxLength(160).IsRequired();
+            e.Property(x => x.Detalle).HasMaxLength(500);
+            e.HasIndex(x => new { x.EmpresaId, x.ColaboradorId, x.Fecha });
+        });
+
+        constructor.Entity<Incidencia>(e =>
+        {
+            e.ToTable("incidencia");
+            e.Property(x => x.Titulo).HasMaxLength(160).IsRequired();
+            e.Property(x => x.Descripcion).HasMaxLength(1000);
+        });
+
+        constructor.Entity<Vacacion>(e =>
+        {
+            e.ToTable("vacacion");
+            e.Property(x => x.Observacion).HasMaxLength(1000);
+        });
 
         constructor.Entity<Aviso>(e =>
         {
@@ -198,6 +249,20 @@ public class ContextoSigem : DbContext
             .HasOne(x => x.TipoDocumento).WithMany()
             .HasForeignKey(x => x.TipoDocumentoId).OnDelete(DeleteBehavior.Restrict);
 
+        // Borrar el documento se lleva sus bytes: no tiene sentido conservarlos.
+        constructor.Entity<ContenidoDocumento>()
+            .HasOne(x => x.Documento).WithOne(d => d!.Contenido)
+            .HasForeignKey<ContenidoDocumento>(x => x.DocumentoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        constructor.Entity<Incidencia>()
+            .HasOne(x => x.Colaborador).WithMany()
+            .HasForeignKey(x => x.ColaboradorId).OnDelete(DeleteBehavior.Cascade);
+
+        constructor.Entity<Vacacion>()
+            .HasOne(x => x.Colaborador).WithMany()
+            .HasForeignKey(x => x.ColaboradorId).OnDelete(DeleteBehavior.Cascade);
+
         constructor.Entity<Aviso>()
             .HasOne(x => x.Colaborador).WithMany()
             .HasForeignKey(x => x.ColaboradorId).OnDelete(DeleteBehavior.Cascade);
@@ -225,6 +290,10 @@ public class ContextoSigem : DbContext
         Filtrar<MovimientoLaboral>(constructor);
         Filtrar<Contrato>(constructor);
         Filtrar<DocumentoDigitalizado>(constructor);
+        Filtrar<ContenidoDocumento>(constructor);
+        Filtrar<MovimientoDocumento>(constructor);
+        Filtrar<Incidencia>(constructor);
+        Filtrar<Vacacion>(constructor);
         Filtrar<Aviso>(constructor);
     }
 

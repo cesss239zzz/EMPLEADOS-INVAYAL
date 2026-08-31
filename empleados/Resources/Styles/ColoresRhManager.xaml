@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    Sistema visual de SIGEM.
+    Sistema visual de RH Manager.
 
-    Los valores salen del sistema de diseño "SIGEM Enterprise" que acompaña a las
+    Los valores salen del sistema de diseño de RH Manager que acompaña a las
     maquetas: azul profundo institucional para la estructura, azul de accion para
     lo pulsable, gris muy claro de lienzo y blanco para las tarjetas. La
     profundidad se logra con capas tonales y un borde de 1px, no con sombras

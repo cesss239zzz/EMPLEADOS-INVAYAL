@@ -25,6 +25,7 @@ public sealed partial class VistaModeloAcceso : VistaModeloBase
         NombreUsuario = string.Empty;
         Contrasena = string.Empty;
         Mensaje = string.Empty;
+        ContrasenaOculta = true;
     }
 
     [ObservableProperty]
@@ -37,6 +38,22 @@ public sealed partial class VistaModeloAcceso : VistaModeloBase
     [ObservableProperty]
     public partial string Contrasena { get; set; }
 
+    /// <summary>
+    /// Enmascara la contrasena. Se puede destapar para comprobar lo que se
+    /// escribio: en un teclado ajeno, o con una contrasena larga, escribir a
+    /// ciegas es la causa mas comun de un acceso fallido.
+    ///
+    /// Destaparla solo la muestra en pantalla. No cambia nada de lo que se
+    /// guarda ni de lo que se registra: la contrasena sigue sin tocar el archivo
+    /// de registro (CLAUDE.md, regla 12).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextoVerContrasena))]
+    public partial bool ContrasenaOculta { get; set; }
+
+    /// <summary>Texto del boton que destapa o vuelve a tapar la contrasena.</summary>
+    public string TextoVerContrasena => ContrasenaOculta ? "Ver" : "Ocultar";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HayMensaje))]
     public partial string Mensaje { get; set; }
@@ -48,8 +65,16 @@ public sealed partial class VistaModeloAcceso : VistaModeloBase
     {
         Contrasena = string.Empty;
         Mensaje = string.Empty;
+
+        // Vuelve a taparse en cada aparicion: dejarla destapada de una sesion
+        // para la siguiente seria una sorpresa desagradable delante de otro.
+        ContrasenaOculta = true;
         return Task.CompletedTask;
     }
+
+    /// <summary>Destapa o vuelve a tapar la contrasena escrita.</summary>
+    [RelayCommand]
+    private void AlternarVerContrasena() => ContrasenaOculta = !ContrasenaOculta;
 
     [RelayCommand]
     private Task AccederAsync()
@@ -74,5 +99,5 @@ public sealed partial class VistaModeloAcceso : VistaModeloBase
                 await _navegacion.IrAsync(RutasNavegacion.Empresas).ConfigureAwait(true);
             },
             "intento de acceso",
-            "No se pudo verificar el acceso. El detalle quedo en el archivo de registro.");
+            "No se pudo verificar el acceso. El detalle quedó en el archivo de registro.");
 }

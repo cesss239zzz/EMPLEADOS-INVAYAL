@@ -90,7 +90,7 @@
                         <RoundRectangle CornerRadius="8" />
                     </Border.StrokeShape>
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="Archivo de configuracion" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Text="Archivo de configuración" Style="{StaticResource EtiquetaCampo}" />
                         <Label Text="{Binding ArchivoConfiguracion}" Style="{StaticResource Dato}" />
                         <BoxView Color="{StaticResource Linea}" HeightRequest="1" Margin="0,6" />
                         <Label Text="Carpeta de registros" Style="{StaticResource EtiquetaCampo}" />
@@ -105,7 +105,7 @@
                                          Padding="20,16" Spacing="10">
                         <Label Text="Pruebas de la etapa E1" Style="{StaticResource EtiquetaCampo}" />
                         <Label Style="{StaticResource Cuerpo}"
-                               Text="Estos dos botones provocan errores a proposito. En ambos casos el fallo queda en el archivo de registro y la aplicacion sigue abierta." />
+                               Text="Estos dos botones provocan errores a propósito. En ambos casos el fallo queda en el archivo de registro y la aplicación sigue abierta." />
                         <HorizontalStackLayout Spacing="8">
                             <Button Text="Error controlado" Style="{StaticResource BotonSecundario}"
                                     Command="{Binding ProvocarErrorControladoCommand}"

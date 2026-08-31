@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    Pantalla de resumen, segun la maqueta "Dashboard Administrativo SIGEM":
+    Pantalla de resumen, segun la maqueta "Dashboard Administrativo":
     cuatro tarjetas de metricas, directorio rapido a la izquierda y alertas
     recientes a la derecha.
 
@@ -36,7 +36,7 @@
                         <RoundRectangle CornerRadius="4" />
                     </Border.StrokeShape>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Exportar reporte" />
+                        <TapGestureRecognizer Command="{Binding ExportarDirectorioCommand}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
                         <Path Data="M10,3 V12.5 M6.4,9 L10,12.6 L13.6,9 M3.5,17 H16.5"
@@ -56,12 +56,13 @@
                         StrokeThickness="0"
                         Padding="16,0"
                         HeightRequest="42"
+                        IsVisible="{Binding PuedeCapturar}"
                         VerticalOptions="Center">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="4" />
                     </Border.StrokeShape>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Nuevo registro" />
+                        <TapGestureRecognizer Command="{Binding NuevoColaboradorCommand}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
                         <Path Data="M10,4 V16 M4,10 H16"
@@ -112,7 +113,7 @@
                 <Border Grid.Column="1" Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="20,18">
                     <VerticalStackLayout Spacing="12">
                         <Grid ColumnDefinitions="*,32">
-                            <Label Grid.Column="0" Text="Cumpleanos del mes"
+                            <Label Grid.Column="0" Text="Cumpleaños del mes"
                                    Style="{StaticResource TituloTarjeta}" VerticalOptions="Center" />
                             <Border Grid.Column="1"
                                     BackgroundColor="{StaticResource AzulClaro}"
@@ -235,7 +236,7 @@
                     <VerticalStackLayout>
 
                         <Grid Padding="22,18" ColumnDefinitions="*,Auto">
-                            <Label Grid.Column="0" Text="Directorio rapido"
+                            <Label Grid.Column="0" Text="Directorio rápido"
                                    Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
                             <HorizontalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                 <HorizontalStackLayout.GestureRecognizers>
@@ -301,12 +302,12 @@
                                                 </VerticalStackLayout>
                                             </Grid>
 
-                                            <Label Grid.Column="1" Text="{Binding Puesto}"
+                                            <Label Grid.Column="1" Text="{Binding PuestoTexto}"
                                                    Style="{StaticResource CuerpoMenor}"
                                                    TextColor="{StaticResource Texto}"
                                                    VerticalOptions="Center"
                                                    LineBreakMode="TailTruncation" />
-                                            <Label Grid.Column="2" Text="{Binding Departamento}"
+                                            <Label Grid.Column="2" Text="{Binding DepartamentoTexto}"
                                                    Style="{StaticResource CuerpoMenor}"
                                                    VerticalOptions="Center"
                                                    LineBreakMode="TailTruncation" />
@@ -340,7 +341,7 @@
                                    Style="{StaticResource TituloSeccion}"
                                    TextColor="{StaticResource AceroSuave}" />
                             <Label Style="{StaticResource CuerpoSuave}"
-                                   Text="Esta empresa todavia no tiene colaboradores registrados." />
+                                   Text="Esta empresa todavía no tiene colaboradores registrados." />
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
@@ -408,7 +409,7 @@
                                    Style="{StaticResource TituloSeccion}"
                                    TextColor="{StaticResource AceroSuave}" />
                             <Label Style="{StaticResource CuerpoSuave}"
-                                   Text="No hay vencimientos ni efemerides que atender en esta empresa." />
+                                   Text="No hay vencimientos ni efemérides que atender en esta empresa." />
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>

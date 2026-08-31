@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Selector de empresa y, a la vez, alta de empresa.
+
+    RH Manager se instala vacio (CR-01), asi que esta pantalla tiene dos caras:
+    la lista de empresas cuando ya hay alguna, y la invitacion a crear la primera
+    cuando no hay ninguna. Nunca un error.
+-->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:empleados.VistaModelos"
              xmlns:srv="clr-namespace:empleados.Servicios"
+             xmlns:sys="clr-namespace:System;assembly=netstandard"
              x:Class="empleados.Vistas.PaginaSelectorEmpresa"
              x:DataType="vm:VistaModeloSelectorEmpresa"
              Shell.NavBarIsVisible="False"
@@ -17,14 +25,16 @@
                 <Label Text="RH Manager"
                        FontFamily="{StaticResource FuenteTitular}"
                        FontSize="19"
-                       FontAttributes="Bold"                       TextColor="#FFFFFF"
+                       FontAttributes="Bold"
+                       TextColor="#FFFFFF"
                        VerticalOptions="Center" />
             </HorizontalStackLayout>
             <Label Grid.Column="1"
                    Text="{Binding Bienvenida}"
                    FontFamily="{StaticResource FuenteTitular}"
                    FontSize="10"
-                   CharacterSpacing="1.2"                   TextColor="#7C8F9C"
+                   CharacterSpacing="1.2"
+                   TextColor="#7C8F9C"
                    VerticalOptions="Center"
                    HorizontalOptions="End"
                    Margin="0,0,18,0" />
@@ -32,16 +42,63 @@
 
         <BoxView Grid.Row="1" Color="{StaticResource Tinta3}" />
 
-        <ScrollView Grid.Row="2">
+        <!-- ═══════════════ LISTA DE EMPRESAS ═══════════════ -->
+        <ScrollView Grid.Row="2" IsVisible="{Binding ListaVisible}">
             <VerticalStackLayout Padding="30,26" Spacing="18">
 
-                <Label Text="Seleccione la empresa" Style="{StaticResource TituloPantalla}" />
-                <Label Style="{StaticResource CuerpoSuave}"
-                       Text="Todo lo que vea a partir de aqui pertenece unicamente a la empresa que elija." />
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="Seleccione la empresa" Style="{StaticResource TituloPantalla}" />
+                        <Label Style="{StaticResource CuerpoSuave}"
+                               Text="Todo lo que vea a partir de aquí pertenece unicamente a la empresa que elija." />
+                    </VerticalStackLayout>
 
-                <Label Text="No tiene ninguna empresa habilitada. Comuniquese con el administrador."
-                       Style="{StaticResource Cuerpo}"
-                       IsVisible="{Binding SinEmpresas}" />
+                    <Button Grid.Column="1"
+                            Text="+ Nueva empresa"
+                            Style="{StaticResource BotonPrimario}"
+                            VerticalOptions="Center"
+                            IsVisible="{Binding PuedeAdministrarEmpresas}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding NuevaEmpresaCommand}" />
+                </Grid>
+
+                <!-- ─── Estado vacio: primera vez que se abre el sistema ─── -->
+                <Border IsVisible="{Binding SinEmpresas}"
+                        BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Linea}"
+                        StrokeThickness="1"
+                        Padding="40,44"
+                        StrokeShape="RoundRectangle 8,8,8,8">
+                    <VerticalStackLayout Spacing="14" HorizontalOptions="Center">
+                        <Path Data="M3,21 V7 L10,3 L17,7 V21 M7,21 V13 H13 V21 M7,9 H9 M11,9 H13"
+                              Stroke="{StaticResource PincelAceroSuave}"
+                              StrokeThickness="1.3"
+                              WidthRequest="46" HeightRequest="46"
+                              HorizontalOptions="Center" />
+
+                        <Label Text="Todavía no hay ninguna empresa"
+                               Style="{StaticResource TituloSeccion}"
+                               HorizontalOptions="Center" />
+
+                        <Label Style="{StaticResource CuerpoSuave}"
+                               HorizontalTextAlignment="Center"
+                               MaximumWidthRequest="460"
+                               Text="RH Manager se entrega vacio. Registre su primera empresa para empezar: despues podra crear sus sucursales, sus catálogos y sus expedientes." />
+
+                        <Button Text="Crear la primera empresa"
+                                Style="{StaticResource BotonPrimario}"
+                                HorizontalOptions="Center"
+                                Margin="0,8,0,0"
+                                IsVisible="{Binding PuedeAdministrarEmpresas}"
+                                IsEnabled="{Binding NoEstaOcupado}"
+                                Command="{Binding NuevaEmpresaCommand}" />
+
+                        <Label Style="{StaticResource CuerpoSuave}"
+                               HorizontalTextAlignment="Center"
+                               IsVisible="{Binding NoPuedeAdministrarEmpresas}"
+                               Text="Comuníquese con el Super Administrador para que le habilite una empresa." />
+                    </VerticalStackLayout>
+                </Border>
 
                 <CollectionView ItemsSource="{Binding Empresas}" SelectionMode="None">
                     <CollectionView.ItemsLayout>
@@ -76,13 +133,57 @@
                                         </Label>
                                     </VerticalStackLayout>
 
-                                    <Button Grid.Column="2"
-                                            Text="Entrar"
-                                            Style="{StaticResource BotonPrimario}"
-                                            Margin="0,0,20,0"
-                                            VerticalOptions="Center"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=SeleccionarCommand}"
-                                            CommandParameter="{Binding .}" />
+                                    <HorizontalStackLayout Grid.Column="2" Spacing="10"
+                                                           VerticalOptions="Center" Margin="0,0,20,0">
+
+                                        <!-- Editar -->
+                                        <Border BackgroundColor="{StaticResource Superficie}"
+                                                Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                                WidthRequest="42" HeightRequest="42" Padding="0"
+                                                VerticalOptions="Center"
+                                                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=PuedeAdministrarEmpresas}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="4" />
+                                            </Border.StrokeShape>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=EditarEmpresaCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Path Data="M3,14.5 V17 H5.5 L14,8.5 L11.5,6 Z M13,4.5 L15.5,7 L17,5.5 L14.5,3 Z"
+                                                  Stroke="{StaticResource PincelAcero}"
+                                                  StrokeThickness="1.4"
+                                                  WidthRequest="20" HeightRequest="20"
+                                                  HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+
+                                        <!-- Eliminar -->
+                                        <Border BackgroundColor="{StaticResource Superficie}"
+                                                Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                                WidthRequest="42" HeightRequest="42" Padding="0"
+                                                VerticalOptions="Center"
+                                                IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=PuedeAdministrarEmpresas}">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="4" />
+                                            </Border.StrokeShape>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=EliminarCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Border.GestureRecognizers>
+                                            <Path Data="M4,6 H16 M8,6 V4.5 H12 V6 M6,6 V16.5 H14 V6 M8.5,8.5 V14 M11.5,8.5 V14"
+                                                  Stroke="{StaticResource PincelSello}"
+                                                  StrokeThickness="1.6"
+                                                  WidthRequest="20" HeightRequest="20"
+                                                  HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+
+                                        <Button Text="Entrar"
+                                                Style="{StaticResource BotonPrimario}"
+                                                VerticalOptions="Center"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=SeleccionarCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -94,6 +195,148 @@
                                    Color="{StaticResource Tinta}"
                                    HeightRequest="20"
                                    HorizontalOptions="Start" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ═══════════════ FORMULARIO DE EMPRESA ═══════════════ -->
+        <ScrollView Grid.Row="2" IsVisible="{Binding ModoFormulario}">
+            <VerticalStackLayout Padding="30,26" Spacing="18" MaximumWidthRequest="820"
+                                 HorizontalOptions="Start">
+
+                <Label Text="{Binding TituloFormulario}" Style="{StaticResource TituloPantalla}" />
+                <Label Style="{StaticResource CuerpoSuave}"
+                       Text="Los campos marcados con asterisco son obligatorios." />
+
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Datos de la empresa" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto,Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Razón social *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding NombreEmpresa}" Style="{StaticResource Campo}"
+                                           Placeholder="Inversiones Ayala Alvarenga S. de R.L." Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="Nombre corto *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding NombreCortoEmpresa}" Style="{StaticResource Campo}"
+                                           Placeholder="Inversiones Ayala" Margin="6,0" />
+                                </Border>
+                                <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                       Text="Es el que aparece en la barra superior." />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                <Label Text="RTN *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding RtnEmpresa}" Style="{StaticResource Campo}"
+                                           Keyboard="Numeric" Placeholder="08019995123456" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
+                                <Label Text="Teléfono" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding TelefonoEmpresa}" Style="{StaticResource Campo}"
+                                           Keyboard="Telephone" Placeholder="2234-5600" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
+                                <Label Text="Correo electronico" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding CorreoEmpresa}" Style="{StaticResource Campo}"
+                                           Keyboard="Email" Placeholder="administracion@empresa.hn" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Dirección" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding DireccionEmpresa}" Style="{StaticResource Campo}"
+                                           Placeholder="Barrio El Centro, Tegucigalpa" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Color de identidad" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+                        <Label Style="{StaticResource CuerpoSuave}"
+                               Text="Tiñe la barra superior para saber de un vistazo en qué empresa está trabajando." />
+
+                        <HorizontalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding ColoresSugeridos}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="sys:String">
+                                    <Border WidthRequest="52" HeightRequest="36" Padding="0"
+                                            BackgroundColor="{Binding .}"
+                                            Stroke="{StaticResource LineaFuerte}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 4,4,4,4">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloSelectorEmpresa}}, Path=ElegirColorCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="Elegido:" Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                            <Border WidthRequest="52" HeightRequest="28" Padding="0"
+                                    BackgroundColor="{Binding ColorEmpresa}"
+                                    Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 4,4,4,4" />
+                            <Label Text="{Binding ColorEmpresa}" Style="{StaticResource DatoSuave}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="{Binding ErrorFormulario}"
+                       IsVisible="{Binding HayErrorFormulario}"
+                       TextColor="{StaticResource Sello}"
+                       FontSize="13" />
+
+                <HorizontalStackLayout Spacing="12">
+                    <Button Text="Guardar"
+                            Style="{StaticResource BotonPrimario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding GuardarEmpresaCommand}" />
+                    <Button Text="Cancelar"
+                            Style="{StaticResource BotonSecundario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding CancelarFormularioEmpresaCommand}" />
+                    <ActivityIndicator IsRunning="{Binding EstaOcupado}"
+                                       IsVisible="{Binding EstaOcupado}"
+                                       Color="{StaticResource Tinta}"
+                                       HeightRequest="20"
+                                       VerticalOptions="Center" />
+                </HorizontalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

@@ -57,3 +57,23 @@ public enum EstadoAviso
     Visto = 2,
     Resuelto = 3
 }
+
+/// <summary>Clase de incidencia registrada en el expediente del colaborador.</summary>
+public enum TipoIncidencia
+{
+    Amonestacion = 1,
+    Memorando = 2,
+    Felicitacion = 3,
+    Permiso = 4,
+    Ausencia = 5,
+    Tardanza = 6
+}
+
+/// <summary>Estado de un periodo de vacaciones.</summary>
+public enum EstadoVacacion
+{
+    Programada = 1,
+    Aprobada = 2,
+    Gozada = 3,
+    Cancelada = 4
+}

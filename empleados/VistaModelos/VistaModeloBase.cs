@@ -56,7 +56,7 @@ public abstract partial class VistaModeloBase : ObservableObject
         => EjecutarSeguroAsync(
             CargarDatosAsync,
             "carga de datos de " + GetType().Name,
-            "No se pudieron cargar los datos de esta pantalla. El detalle quedo en el archivo de registro.");
+            "No se pudieron cargar los datos de esta pantalla. El detalle quedó en el archivo de registro.");
 
     /// <summary>
     /// Ejecuta una operacion asincrona con la proteccion completa que exige CLAUDE.md.
@@ -71,7 +71,7 @@ public abstract partial class VistaModeloBase : ObservableObject
     {
         if (EstaOcupado)
         {
-            Registro.LogDebug("Se ignoro una segunda pulsacion durante: {Descripcion}", descripcion);
+            Registro.LogDebug("Se ignoro una segunda pulsación durante: {Descripcion}", descripcion);
             return;
         }
 
@@ -83,10 +83,10 @@ public abstract partial class VistaModeloBase : ObservableObject
         }
         catch (Exception ex)
         {
-            Registro.LogError(ex, "Fallo durante: {Descripcion}", descripcion);
+            Registro.LogError(ex, "Falló durante: {Descripcion}", descripcion);
 
             // Al usuario nunca se le muestra ex.Message crudo (CLAUDE.md, regla 4).
-            await Dialogo.AvisarAsync("No se pudo completar la operacion", mensajeUsuario)
+            await Dialogo.AvisarAsync("No se pudo completar la operación", mensajeUsuario)
                 .ConfigureAwait(true);
         }
         finally

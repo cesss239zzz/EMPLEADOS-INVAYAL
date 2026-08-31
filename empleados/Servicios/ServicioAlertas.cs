@@ -14,12 +14,12 @@ public sealed class ServicioAlertas : IServicioAlertas
     /// <summary>Duracion del periodo de prueba en Honduras.</summary>
     private const int DiasPeriodoPrueba = 60;
 
-    private readonly IDbContextFactory<ContextoSigem> _fabrica;
+    private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly IContextoEmpresa _contextoEmpresa;
     private readonly ILogger<ServicioAlertas> _registro;
 
     public ServicioAlertas(
-        IDbContextFactory<ContextoSigem> fabrica,
+        IDbContextFactory<ContextoRhManager> fabrica,
         IContextoEmpresa contextoEmpresa,
         ILogger<ServicioAlertas> registro)
     {
@@ -81,7 +81,7 @@ public sealed class ServicioAlertas : IServicioAlertas
 
     /// <summary>Contratos temporales que vencen dentro de la ventana de aviso.</summary>
     private async Task<List<Aviso>> CalcularVencimientosDeContrato(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
         var limite = hoy.AddDays(DiasAvisoContrato);
 
@@ -106,9 +106,19 @@ public sealed class ServicioAlertas : IServicioAlertas
             "contrato:" + c.Numero + ":" + c.Fin.ToString("yyyy-MM-dd"))).ToList();
     }
 
-    /// <summary>Documentos que vencen dentro de los dias que define su tipo.</summary>
+    /// <summary>
+    /// Documentos por vencer y ya vencidos (solicitud de cambios, CR-10).
+    ///
+    /// La anticipación NO está fija en el código: sale de la escala configurada
+    /// en el tipo de documento ("30,15,5"). Se genera un aviso por cada escalón
+    /// alcanzado, cada uno con su propia clave de idempotencia, así que el
+    /// recordatorio se repite al acercarse la fecha sin duplicar el anterior.
+    ///
+    /// Lo ya vencido genera además su propio aviso, que es el que sale en rojo:
+    /// un documento vencido no deja de importar porque pasó su último escalón.
+    /// </summary>
     private async Task<List<Aviso>> CalcularVencimientosDeDocumento(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
         var documentos = await contexto.Documentos
             .Where(d => d.FechaVencimiento != null)
@@ -118,34 +128,76 @@ public sealed class ServicioAlertas : IServicioAlertas
                 d.ColaboradorId,
                 Vence = d.FechaVencimiento!.Value,
                 Tipo = d.TipoDocumento!.Nombre,
-                Dias = d.TipoDocumento.DiasAvisoAnticipado,
+                Escala = d.TipoDocumento.EscalaAviso,
+                DiasBase = d.TipoDocumento.DiasAvisoAnticipado,
                 Nombre = d.Colaborador!.PrimerNombre + " " + d.Colaborador.PrimerApellido
             })
             .ToListAsync(cancelacion)
             .ConfigureAwait(false);
 
-        return documentos
-            .Where(d => d.Vence <= hoy.AddDays(d.Dias))
-            .Select(d => Crear(
+        var avisos = new List<Aviso>();
+
+        foreach (var d in documentos)
+        {
+            var restantes = (int)(d.Vence.Date - hoy.Date).TotalDays;
+            var fechaTexto = d.Vence.ToString("dd/MM/yyyy");
+
+            if (restantes < 0)
+            {
+                avisos.Add(Crear(
+                    TipoAviso.VencimientoDocumento,
+                    d.ColaboradorId,
+                    d.Tipo + " VENCIDO: " + d.Nombre,
+                    "Venció el " + fechaTexto + ", hace " + Math.Abs(restantes) + " día(s).",
+                    d.Vence,
+                    "documento:" + d.Id + ":" + d.Vence.ToString("yyyy-MM-dd") + ":vencido"));
+
+                continue;
+            }
+
+            // La escala se reconstruye acá: el tipo ya no está adjunto a la
+            // entidad porque la consulta se proyectó a un tipo anónimo.
+            var escalones = new TipoDocumento
+            {
+                EscalaAviso = d.Escala,
+                DiasAvisoAnticipado = d.DiasBase
+            }.DiasDeAviso();
+
+            // Solo el escalón más ajustado que ya se alcanzó. Sin esto, un
+            // documento a 3 días generaría de golpe los avisos de 30, 15 y 5.
+            var alcanzado = escalones.Where(e => restantes <= e).OrderBy(e => e).FirstOrDefault();
+
+            if (alcanzado == 0)
+            {
+                continue;
+            }
+
+            avisos.Add(Crear(
                 TipoAviso.VencimientoDocumento,
                 d.ColaboradorId,
                 d.Tipo + " por vencer: " + d.Nombre,
-                "El documento vence el " + d.Vence.ToString("dd/MM/yyyy") + ".",
+                "Vence el " + fechaTexto + ", en " + restantes + " día(s).",
                 d.Vence,
-                "documento:" + d.Id + ":" + d.Vence.ToString("yyyy-MM-dd")))
-            .ToList();
+                "documento:" + d.Id + ":" + d.Vence.ToString("yyyy-MM-dd") + ":" + alcanzado));
+        }
+
+        return avisos;
     }
 
     /// <summary>Cumpleanos del mes en curso.</summary>
     private async Task<List<Aviso>> CalcularCumpleanos(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
+        // La fecha de nacimiento es opcional (CR-04): a quien no la tenga
+        // capturada simplemente no se le felicita, en vez de reventar el motor.
         var personas = await contexto.Colaboradores
-            .Where(c => c.Estado == EstadoColaborador.Activo && c.FechaNacimiento.Month == hoy.Month)
+            .Where(c => c.Estado == EstadoColaborador.Activo
+                && c.FechaNacimiento != null
+                && c.FechaNacimiento.Value.Month == hoy.Month)
             .Select(c => new
             {
                 c.Id,
-                c.FechaNacimiento,
+                Nacimiento = c.FechaNacimiento!.Value,
                 Nombre = c.PrimerNombre + " " + c.PrimerApellido
             })
             .ToListAsync(cancelacion)
@@ -153,14 +205,14 @@ public sealed class ServicioAlertas : IServicioAlertas
 
         return personas.Select(p =>
         {
-            var dia = Math.Min(p.FechaNacimiento.Day, DateTime.DaysInMonth(hoy.Year, hoy.Month));
+            var dia = Math.Min(p.Nacimiento.Day, DateTime.DaysInMonth(hoy.Year, hoy.Month));
             var fecha = new DateTime(hoy.Year, hoy.Month, dia);
 
             return Crear(
                 TipoAviso.Cumpleanos,
                 p.Id,
-                "Cumpleanos de " + p.Nombre,
-                "Cumple anos el " + fecha.ToString("dd/MM") + ".",
+                "Cumpleaños de " + p.Nombre,
+                "Cumple años el " + fecha.ToString("dd/MM") + ".",
                 fecha,
                 "cumple:" + p.Id + ":" + hoy.ToString("yyyy-MM"));
         }).ToList();
@@ -168,7 +220,7 @@ public sealed class ServicioAlertas : IServicioAlertas
 
     /// <summary>Aniversarios laborales del mes en curso.</summary>
     private async Task<List<Aviso>> CalcularAniversarios(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
         var personas = await contexto.Colaboradores
             .Where(c => c.Estado == EstadoColaborador.Activo
@@ -187,13 +239,14 @@ public sealed class ServicioAlertas : IServicioAlertas
         {
             var dia = Math.Min(p.FechaIngreso.Day, DateTime.DaysInMonth(hoy.Year, hoy.Month));
             var fecha = new DateTime(hoy.Year, hoy.Month, dia);
-            var anos = hoy.Year - p.FechaIngreso.Year;
+            var años = hoy.Year - p.FechaIngreso.Year;
 
             return Crear(
                 TipoAviso.AniversarioLaboral,
                 p.Id,
                 "Aniversario laboral de " + p.Nombre,
-                "Cumple " + anos + " anos en la empresa el " + fecha.ToString("dd/MM") + ".",
+                "Cumple " + años + (años == 1 ? " año" : " años")
+                    + " en la empresa el " + fecha.ToString("dd/MM") + ".",
                 fecha,
                 "aniversario:" + p.Id + ":" + hoy.ToString("yyyy-MM"));
         }).ToList();
@@ -201,7 +254,7 @@ public sealed class ServicioAlertas : IServicioAlertas
 
     /// <summary>Colaboradores cuyo periodo de prueba termina pronto.</summary>
     private async Task<List<Aviso>> CalcularFinDePeriodoDePrueba(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
         var desde = hoy.AddDays(-DiasPeriodoPrueba);
 
@@ -249,6 +302,21 @@ public sealed class ServicioAlertas : IServicioAlertas
         ClaveIdempotencia = clave,
         FechaCreacion = DateTime.UtcNow
     };
+
+    /// <inheritdoc />
+    public async Task<int> ContarPendientesAsync(CancellationToken cancelacion = default)
+    {
+        if (!_contextoEmpresa.HayEmpresaActiva)
+        {
+            return 0;
+        }
+
+        await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
+
+        return await contexto.Avisos
+            .CountAsync(a => a.Estado == EstadoAviso.Pendiente, cancelacion)
+            .ConfigureAwait(false);
+    }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<LineaAviso>> ObtenerPendientesAsync(CancellationToken cancelacion = default)

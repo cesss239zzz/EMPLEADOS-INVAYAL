@@ -29,20 +29,37 @@ public sealed record FilaColaborador(
     int Id,
     string Codigo,
     string NombreCompleto,
-    string Identidad,
-    string Puesto,
-    string Departamento,
-    string Sucursal,
+    string? Identidad,
+    string? Puesto,
+    string? Departamento,
+    string? Sucursal,
     DateTime FechaIngreso,
     EstadoColaborador Estado,
     EstadoExpediente Expediente,
-    decimal? Salario)
+    decimal? Salario,
+    bool PuedeVerSalario)
 {
+    /// <summary>Lo que se muestra cuando un campo opcional no tiene dato (CR-04).</summary>
+    public const string SinDato = "Sin registrar";
+
     /// <summary>Fecha en formato hondureno.</summary>
     public string FechaIngresoTexto => FechaIngreso.ToString("dd/MM/yyyy");
 
-    /// <summary>Importe en lempiras, o guiones si el perfil no puede verlo.</summary>
-    public string SalarioTexto => Salario is null ? "———" : Salario.Value.ToString("C");
+    public string IdentidadTexto => Mostrar(Identidad);
+    public string PuestoTexto => Mostrar(Puesto);
+    public string DepartamentoTexto => Mostrar(Departamento);
+    public string SucursalTexto => Mostrar(Sucursal);
+
+    /// <summary>
+    /// Importe en lempiras. Distingue tres cosas que no son lo mismo: que el
+    /// perfil no pueda verlo, que no se haya capturado y que valga algo.
+    /// </summary>
+    public string SalarioTexto => !PuedeVerSalario ? "———"
+        : Salario is null ? SinDato
+        : Salario.Value.ToString("C");
+
+    private static string Mostrar(string? valor)
+        => string.IsNullOrWhiteSpace(valor) ? SinDato : valor;
 
     public string EstadoTexto => Estado switch
     {
@@ -129,7 +146,84 @@ public sealed record OpcionesFiltro(
     IReadOnlyList<OpcionFiltro> Sucursales,
     int TotalColaboradores);
 
-/// <summary>Consulta de colaboradores de la empresa activa.</summary>
+/// <summary>
+/// Una opcion de un desplegable del formulario de captura. A diferencia de
+/// <see cref="OpcionFiltro"/> nunca lleva la fila "todos": en el alta hay que
+/// elegir una sucursal, un departamento y un puesto reales.
+/// </summary>
+/// <param name="Id">Identificador del catalogo.</param>
+/// <param name="Nombre">Texto que ve el usuario.</param>
+/// <param name="DepartamentoId">
+/// Solo lo llevan los puestos: sirve para acotar el desplegable de puestos al
+/// departamento elegido. Nulo en sucursales y departamentos.
+/// </param>
+public sealed record OpcionCatalogo(int Id, string Nombre, int? DepartamentoId = null);
+
+/// <summary>
+/// Catalogos que alimentan los desplegables del formulario de captura, ya
+/// filtrados por la empresa activa. Son listas de catalogo (pocas filas), no
+/// tablas de negocio: traerlas enteras no contradice la regla 13.
+/// </summary>
+public sealed record CatalogosEdicion(
+    IReadOnlyList<OpcionCatalogo> Sucursales,
+    IReadOnlyList<OpcionCatalogo> Departamentos,
+    IReadOnlyList<OpcionCatalogo> Puestos);
+
+/// <summary>
+/// Datos editables de un colaborador. Viaja del servicio al formulario cuando
+/// se abre para editar, y del formulario al servicio cuando se guarda. Cubre
+/// solo la cabecera del expediente; contactos, contratos y documentos son de
+/// una sub-etapa posterior.
+/// </summary>
+public sealed class DatosEdicionColaborador
+{
+    /// <summary>Cero en el alta; el identificador del colaborador en la edicion.</summary>
+    public int Id { get; set; }
+
+    // Obligatorios (CR-04).
+    public string Codigo { get; set; } = string.Empty;
+    public string PrimerNombre { get; set; } = string.Empty;
+    public string PrimerApellido { get; set; } = string.Empty;
+    public DateTime FechaIngreso { get; set; }
+
+    // Opcionales: nulo significa "todavia sin capturar".
+    public string? Identidad { get; set; }
+    public string? SegundoNombre { get; set; }
+    public string? SegundoApellido { get; set; }
+
+    public Sexo? Sexo { get; set; }
+    public DateTime? FechaNacimiento { get; set; }
+    public EstadoColaborador Estado { get; set; } = EstadoColaborador.Activo;
+
+    public string? Telefono { get; set; }
+    public string? Correo { get; set; }
+    public string? Direccion { get; set; }
+
+    /// <summary>Importe en decimal, jamas en double ni float (CLAUDE.md, regla 10).</summary>
+    public decimal? SalarioBase { get; set; }
+
+    public int? SucursalId { get; set; }
+    public int? DepartamentoId { get; set; }
+    public int? PuestoId { get; set; }
+
+    public bool EsAlta => Id == 0;
+}
+
+/// <summary>
+/// Resultado de guardar un colaborador. Separa el fallo de negocio previsible
+/// —una identidad repetida, un catalogo sin elegir— del fallo de infraestructura,
+/// que sube como excepcion y lo maneja el bloque protegido del ViewModel.
+/// </summary>
+/// <param name="Exito">Verdadero si se guardo.</param>
+/// <param name="Id">Identificador del colaborador guardado.</param>
+/// <param name="Error">Mensaje en espanol cuando <paramref name="Exito"/> es falso.</param>
+public sealed record ResultadoGuardado(bool Exito, int Id, string? Error)
+{
+    public static ResultadoGuardado Ok(int id) => new(true, id, null);
+    public static ResultadoGuardado Falla(string mensaje) => new(false, 0, mensaje);
+}
+
+/// <summary>Consulta y captura de colaboradores de la empresa activa.</summary>
 public interface IServicioColaboradores
 {
     /// <summary>
@@ -143,4 +237,23 @@ public interface IServicioColaboradores
 
     /// <summary>Opciones de los desplegables y total sin filtrar.</summary>
     Task<OpcionesFiltro> ObtenerOpcionesAsync(CancellationToken cancelacion = default);
+
+    /// <summary>Catalogos para los desplegables del formulario de captura.</summary>
+    Task<CatalogosEdicion> ObtenerCatalogosEdicionAsync(CancellationToken cancelacion = default);
+
+    /// <summary>
+    /// Datos editables del colaborador, o nulo si no existe en la empresa activa.
+    /// </summary>
+    Task<DatosEdicionColaborador?> ObtenerParaEdicionAsync(
+        int colaboradorId,
+        CancellationToken cancelacion = default);
+
+    /// <summary>
+    /// Da de alta un colaborador nuevo (Id cero) o actualiza uno existente. La
+    /// empresa se asigna desde el contexto activo, nunca desde el formulario.
+    /// Devuelve un fallo controlado si la identidad o el codigo ya existen.
+    /// </summary>
+    Task<ResultadoGuardado> GuardarAsync(
+        DatosEdicionColaborador datos,
+        CancellationToken cancelacion = default);
 }

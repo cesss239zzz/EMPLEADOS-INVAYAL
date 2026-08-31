@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Formulario de novedad del expediente. Un mismo panel sirve para las dos:
+    los campos de incidencia y los de vacaciones se muestran segun el modo
+    (EsIncidencia / EsVacaciones). Sin logica aca: todo se enlaza al ViewModel.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:c="clr-namespace:empleados.Vistas.Controles"
+             x:Class="empleados.Vistas.Paneles.PanelNovedad"
+             x:DataType="vm:VistaModeloPrincipal"
+             BackgroundColor="{StaticResource Papel}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ═══ CABECERA ═══ -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Padding="32,22,32,16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                <Label Text="{Binding TituloNovedad}" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloNovedad}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <Button Grid.Column="1"
+                    Text="Cancelar"
+                    Style="{StaticResource BotonSecundario}"
+                    Command="{Binding CancelarNovedadCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+
+            <Button Grid.Column="2"
+                    Text="Guardar"
+                    Style="{StaticResource BotonPrimario}"
+                    Command="{Binding GuardarNovedadCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ═══ CAMPOS ═══ -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="32,0,32,32" Spacing="18">
+
+                <!-- Franja de validacion -->
+                <Border BackgroundColor="{StaticResource SelloTenue}"
+                        Stroke="#F2C7C1"
+                        StrokeThickness="1"
+                        Padding="16,12"
+                        IsVisible="{Binding HayErrorNovedad}"
+                        StrokeShape="RoundRectangle 4,4,4,4">
+                    <Label Text="{Binding ErrorNovedad}"
+                           Style="{StaticResource Cuerpo}"
+                           TextColor="{StaticResource Sello}" />
+                </Border>
+
+                <!-- ─── INCIDENCIA ─── -->
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22"
+                        IsVisible="{Binding EsIncidencia}">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Datos de la incidencia" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Tipo" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding TiposIncidencia}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding TipoIncidenciaSeleccionado}"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Fecha del hecho" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaIncidencia}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaHoy}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Título" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding TituloIncidencia}" Style="{StaticResource Campo}"
+                                           Placeholder="Ej. Llegada tardia reiterada" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Descripción" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="6,4"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Editor Text="{Binding DescripcionIncidencia}"
+                                            FontFamily="{StaticResource FuenteTexto}"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent"
+                                            HeightRequest="100"
+                                            AutoSize="Disabled" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ─── VACACIONES ─── -->
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22"
+                        IsVisible="{Binding EsVacaciones}">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Periodo de vacaciones" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Fecha de inicio" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaInicioVacaciones}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaFutura}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Fecha de fin" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaFinVacaciones}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaFutura}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="Días del periodo" Style="{StaticResource EtiquetaCampo}" />
+                                <Border BackgroundColor="{StaticResource SuperficieSuave}"
+                                        Stroke="{StaticResource Linea}" StrokeThickness="1"
+                                        Padding="12,10" StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Label Text="{Binding DiasVacacionesTexto}" Style="{StaticResource Dato}" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Observación" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding ObservacionVacaciones}" Style="{StaticResource Campo}"
+                                           Placeholder="Opcional" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentView>

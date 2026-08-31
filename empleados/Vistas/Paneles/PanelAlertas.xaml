@@ -91,7 +91,7 @@
                     <Label Text="Nada pendiente" Style="{StaticResource TituloSeccion}"
                            TextColor="{StaticResource AceroSuave}" />
                     <Label Style="{StaticResource CuerpoSuave}"
-                           Text="El motor de alertas no encontro vencimientos ni efemerides por atender en esta empresa." />
+                           Text="El motor de alertas no encontró vencimientos ni efemérides por atender en esta empresa." />
                 </VerticalStackLayout>
             </Grid>
         </Border>

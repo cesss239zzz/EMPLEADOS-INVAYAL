@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- SIGEM se presenta en Windows. Android queda para fase posterior (CLAUDE.md). -->
+		<!-- RH Manager se presenta en Windows. Android queda para fase posterior (CLAUDE.md). -->
 		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
@@ -21,7 +21,7 @@
 
 		<!-- Identidad visible -->
 		<ApplicationTitle>RH Manager</ApplicationTitle>
-		<ApplicationId>hn.invayal.sigem</ApplicationId>
+		<ApplicationId>hn.invayal.rhmanager</ApplicationId>
 		<ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
@@ -70,6 +70,13 @@
 		</PackageReference>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.19" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Reportes. QuestPDF con licencia Community; Excel con ClosedXML,
+		     nunca EPPlus por su licencia comercial (CLAUDE.md). -->
+		<PackageReference Include="QuestPDF" Version="2024.12.1" />
+		<PackageReference Include="ClosedXML" Version="0.104.2" />
 	</ItemGroup>
 
 </Project>

@@ -14,7 +14,7 @@ public static class RegistroEmergencia
     /// <summary>Anexa una linea al archivo de arranque critico.</summary>
     public static void Escribir(string origen, Exception? excepcion)
     {
-        var texto = excepcion?.ToString() ?? "(sin detalle de excepcion)";
+        var texto = excepcion?.ToString() ?? "(sin detalle de excepción)";
         Escribir(origen + Environment.NewLine + texto);
     }
 
@@ -23,7 +23,7 @@ public static class RegistroEmergencia
     {
         try
         {
-            RutasSigem.Asegurar();
+            RutasRhManager.Asegurar();
 
             var linea = "[" + DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz") + "] "
                 + mensaje + Environment.NewLine
@@ -31,7 +31,7 @@ public static class RegistroEmergencia
 
             lock (Candado)
             {
-                File.AppendAllText(RutasSigem.ArchivoRegistroEmergencia, linea);
+                File.AppendAllText(RutasRhManager.ArchivoRegistroEmergencia, linea);
             }
         }
         catch

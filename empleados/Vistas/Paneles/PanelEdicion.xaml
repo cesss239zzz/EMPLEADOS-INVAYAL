@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Formulario de alta y edicion del expediente. Reusa el lenguaje visual de la
+    ficha: tarjeta blanca, borde de 1px y campos en dos columnas. La cabecera con
+    los botones Guardar y Cancelar queda fija; los campos van en un ScrollView.
+
+    Ningun campo tiene logica aca: todo se enlaza a VistaModeloPrincipal, que
+    valida y guarda (CLAUDE.md, regla 11).
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:c="clr-namespace:empleados.Vistas.Controles"
+             x:Class="empleados.Vistas.Paneles.PanelEdicion"
+             x:DataType="vm:VistaModeloPrincipal"
+             BackgroundColor="{StaticResource Papel}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ═══ CABECERA CON ACCIONES ═══ -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Padding="32,22,32,16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                <Label Text="{Binding TituloEdicion}" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloEdicion}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <Button Grid.Column="1"
+                    Text="Cancelar"
+                    Style="{StaticResource BotonSecundario}"
+                    Command="{Binding CancelarEdicionCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+
+            <Button Grid.Column="2"
+                    Text="Guardar expediente"
+                    Style="{StaticResource BotonPrimario}"
+                    Command="{Binding GuardarEdicionCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ═══ CAMPOS ═══ -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="32,0,32,32" Spacing="18">
+
+                <!-- Franja de validacion -->
+                <Border BackgroundColor="{StaticResource SelloTenue}"
+                        Stroke="#F2C7C1"
+                        StrokeThickness="1"
+                        Padding="16,12"
+                        IsVisible="{Binding HayErrorEdicion}"
+                        StrokeShape="RoundRectangle 4,4,4,4">
+                    <Grid ColumnDefinitions="22,*" ColumnSpacing="10">
+                        <Path Grid.Column="0"
+                              Data="M10,2.2 A7.8,7.8 0 1,0 10,17.8 A7.8,7.8 0 1,0 10,2.2 Z M10,6 V11 M10,13.4 V14"
+                              Stroke="{StaticResource PincelSello}"
+                              StrokeThickness="1.6"
+                              WidthRequest="20" HeightRequest="20"
+                              VerticalOptions="Center" />
+                        <Label Grid.Column="1"
+                               Text="{Binding ErrorEdicion}"
+                               Style="{StaticResource Cuerpo}"
+                               TextColor="{StaticResource Sello}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- ─── DATOS PERSONALES ─── -->
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Información personal" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto,Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Código de expediente *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Codigo}" Style="{StaticResource Campo}"
+                                           Placeholder="INV-013" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Número de identidad" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Identidad}" Style="{StaticResource Campo}"
+                                           Placeholder="0801-1990-12345" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="Primer nombre *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding PrimerNombre}" Style="{StaticResource Campo}" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                <Label Text="Segundo nombre" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding SegundoNombre}" Style="{StaticResource Campo}" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
+                                <Label Text="Primer apellido *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding PrimerApellido}" Style="{StaticResource Campo}" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
+                                <Label Text="Segundo apellido" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding SegundoApellido}" Style="{StaticResource Campo}" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="3" Grid.Column="0" Spacing="6">
+                                <Label Text="Sexo" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding Sexos}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding SexoSeleccionado}"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="3" Grid.Column="1" Spacing="6">
+                                <Label Text="Fecha de nacimiento" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaNacimiento}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaHoy}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ─── DATOS LABORALES ─── -->
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Información laboral" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Fecha de ingreso *" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaIngreso}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaHoy}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Situación laboral" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding EstadosEd}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding EstadoEdSeleccionado}"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                <Label Text="Sucursal (opcional)" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        IsVisible="{Binding SinSucursales, Converter={StaticResource NoEs}}"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding SucursalesEd}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding SucursalEd}"
+                                            Title="Sin sucursal"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                                <Button Text="+ Crear la primera sucursal"
+                                        Style="{StaticResource BotonSecundario}"
+                                        HorizontalOptions="Start"
+                                        IsVisible="{Binding SinSucursales}"
+                                        Command="{Binding CrearCatalogoDesdeEdicionCommand}"
+                                        CommandParameter="Sucursal" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                <Label Text="Departamento (opcional)" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        IsVisible="{Binding SinDepartamentos, Converter={StaticResource NoEs}}"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding DepartamentosEd}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding DepartamentoEd}"
+                                            Title="Sin departamento"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                                <Button Text="+ Crear el primer departamento"
+                                        Style="{StaticResource BotonSecundario}"
+                                        HorizontalOptions="Start"
+                                        IsVisible="{Binding SinDepartamentos}"
+                                        Command="{Binding CrearCatalogoDesdeEdicionCommand}"
+                                        CommandParameter="Departamento" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
+                                <Label Text="Puesto (opcional)" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        IsVisible="{Binding SinPuestos, Converter={StaticResource NoEs}}"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding PuestosEd}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding PuestoEd}"
+                                            Title="Sin puesto"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                                <Button Text="+ Crear el primer puesto"
+                                        Style="{StaticResource BotonSecundario}"
+                                        HorizontalOptions="Start"
+                                        IsVisible="{Binding SinPuestos}"
+                                        Command="{Binding CrearCatalogoDesdeEdicionCommand}"
+                                        CommandParameter="Puesto" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
+                                <Label Text="Salario base (L.)" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Salario}" Style="{StaticResource Campo}"
+                                           Keyboard="Numeric" Placeholder="Sin capturar" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ─── CONTACTO ─── -->
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Contacto" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Teléfono" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Telefono}" Style="{StaticResource Campo}"
+                                           Keyboard="Telephone" Placeholder="9999-9999" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Correo electronico" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Correo}" Style="{StaticResource Campo}"
+                                           Keyboard="Email" Placeholder="nombre@empresa.hn" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Dirección residencial" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding Direccion}" Style="{StaticResource Campo}" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentView>

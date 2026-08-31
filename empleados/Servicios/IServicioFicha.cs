@@ -70,47 +70,6 @@ public enum SituacionDocumento
     Vencido = 2
 }
 
-/// <summary>Un documento digitalizado del expediente.</summary>
-public sealed record LineaDocumento(
-    string Tipo,
-    string NombreArchivo,
-    DateTime FechaEmision,
-    DateTime? FechaVencimiento)
-{
-    public string EmisionTexto => FechaEmision.ToString("dd/MM/yyyy");
-
-    public string VencimientoTexto => FechaVencimiento is null
-        ? "No vence"
-        : FechaVencimiento.Value.ToString("dd/MM/yyyy");
-
-    /// <summary>Dias que faltan para vencer. Nulo si no vence.</summary>
-    public int? DiasParaVencer => FechaVencimiento is null
-        ? null
-        : (int)(FechaVencimiento.Value.Date - DateTime.Today).TotalDays;
-
-    public bool EstaVencido => DiasParaVencer is < 0;
-
-    public bool PorVencer => DiasParaVencer is >= 0 and <= 60;
-
-    public string SituacionTexto => FechaVencimiento is null ? "Vigente"
-        : EstaVencido ? "Vencido"
-        : PorVencer ? "Por vencer"
-        : "Vigente";
-
-    /// <summary>Severidad, para que la vista elija color sin repetir la regla.</summary>
-    public SituacionDocumento Situacion => EstaVencido ? SituacionDocumento.Vencido
-        : PorVencer ? SituacionDocumento.PorVencer
-        : SituacionDocumento.Vigente;
-
-    /// <summary>Renglon de apoyo bajo el nombre del documento.</summary>
-    public string DetalleTexto => FechaVencimiento is null
-        ? "Actualizado: " + EmisionTexto
-        : EstaVencido
-            ? "Vencido: " + VencimientoTexto
-            : PorVencer
-                ? "Vence: " + VencimientoTexto
-                : "Vigente hasta: " + VencimientoTexto;
-}
 
 /// <summary>
 /// Expediente completo de un colaborador. Se consulta al abrir la ficha, nunca
@@ -120,31 +79,63 @@ public sealed record DetalleColaborador(
     int Id,
     string Codigo,
     string NombreCompleto,
-    string Identidad,
-    Sexo Sexo,
-    DateTime FechaNacimiento,
+    string? Identidad,
+    Sexo? Sexo,
+    DateTime? FechaNacimiento,
     DateTime FechaIngreso,
     DateTime? FechaSalida,
     EstadoColaborador Estado,
-    string Telefono,
-    string Correo,
-    string Direccion,
-    string Puesto,
-    string Departamento,
-    string Sucursal,
+    string? Telefono,
+    string? Correo,
+    string? Direccion,
+    string? Puesto,
+    string? Departamento,
+    string? Sucursal,
     decimal? Salario,
+    bool PuedeVerSalario,
     IReadOnlyList<LineaContacto> Contactos,
     IReadOnlyList<LineaMovimiento> Movimientos,
     IReadOnlyList<LineaContrato> Contratos,
-    IReadOnlyList<LineaDocumento> Documentos)
+    IReadOnlyList<FilaDocumento> Documentos,
+    IReadOnlyList<LineaIncidencia> Incidencias,
+    IReadOnlyList<LineaVacacion> Vacaciones)
 {
-    public string SexoTexto => Sexo == Sexo.Femenino ? "Femenino" : "Masculino";
+    /// <summary>
+    /// Lo que ve el usuario donde no hay dato. La ficha nunca deja un hueco en
+    /// blanco: un espacio vacio no distingue "no lo capturamos" de "se rompio
+    /// la pantalla" (solicitud de cambios, CR-04).
+    /// </summary>
+    public const string SinDato = "Sin registrar";
 
-    public string NacimientoTexto => FechaNacimiento.ToString("dd/MM/yyyy");
+    public string IdentidadTexto => Mostrar(Identidad);
+    public string TelefonoTexto => Mostrar(Telefono);
+    public string CorreoTexto => Mostrar(Correo);
+    public string DireccionTexto => Mostrar(Direccion);
+    public string PuestoTexto => Mostrar(Puesto);
+    public string DepartamentoTexto => Mostrar(Departamento);
+    public string SucursalTexto => Mostrar(Sucursal);
+
+    // El nombre completo del tipo hace falta porque la propiedad Sexo tapa al
+    // tipo Sexo dentro de este record.
+    public string SexoTexto => Sexo switch
+    {
+        empleados.Datos.Entidades.Sexo.Femenino => "Femenino",
+        empleados.Datos.Entidades.Sexo.Masculino => "Masculino",
+        _ => SinDato
+    };
+
+    public string NacimientoTexto => FechaNacimiento is { } fecha
+        ? fecha.ToString("dd/MM/yyyy")
+        : SinDato;
 
     public string IngresoTexto => FechaIngreso.ToString("dd/MM/yyyy");
 
-    public string SalarioTexto => Salario is null ? "———" : Salario.Value.ToString("C");
+    public string SalarioTexto => !PuedeVerSalario ? "———"
+        : Salario is null ? SinDato
+        : Salario.Value.ToString("C");
+
+    private static string Mostrar(string? valor)
+        => string.IsNullOrWhiteSpace(valor) ? SinDato : valor;
 
     public string EstadoTexto => Estado switch
     {
@@ -153,13 +144,18 @@ public sealed record DetalleColaborador(
         _ => "Inactivo"
     };
 
-    /// <summary>Edad cumplida hoy.</summary>
-    public int Edad
+    /// <summary>Edad cumplida hoy, o nula si no se capturo la fecha de nacimiento.</summary>
+    public int? Edad
     {
         get
         {
-            var edad = DateTime.Today.Year - FechaNacimiento.Year;
-            if (FechaNacimiento.Date > DateTime.Today.AddYears(-edad))
+            if (FechaNacimiento is not { } nacimiento)
+            {
+                return null;
+            }
+
+            var edad = DateTime.Today.Year - nacimiento.Year;
+            if (nacimiento.Date > DateTime.Today.AddYears(-edad))
             {
                 edad--;
             }
@@ -168,9 +164,11 @@ public sealed record DetalleColaborador(
         }
     }
 
-    public string EdadTexto => Edad + " anos";
+    public string EdadTexto => Edad is { } edad
+        ? edad + (edad == 1 ? " año" : " años")
+        : SinDato;
 
-    /// <summary>Antiguedad en la empresa, en anos y meses.</summary>
+    /// <summary>Antiguedad en la empresa, en años y meses.</summary>
     public string AntiguedadTexto
     {
         get
@@ -183,12 +181,15 @@ public sealed record DetalleColaborador(
             }
 
             meses = Math.Max(meses, 0);
-            var anos = meses / 12;
+            var años = meses / 12;
             var restantes = meses % 12;
 
-            return anos == 0
-                ? restantes + " meses"
-                : restantes == 0 ? anos + " anos" : anos + " anos y " + restantes + " meses";
+            var textoAños = años == 1 ? "1 año" : años + " años";
+            var textoMeses = restantes == 1 ? "1 mes" : restantes + " meses";
+
+            return años == 0
+                ? textoMeses
+                : restantes == 0 ? textoAños : textoAños + " y " + textoMeses;
         }
     }
 

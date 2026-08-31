@@ -21,16 +21,20 @@ public static class MauiProgram
         // durante el arranque ya debe salir en formato hondureno.
         FijarCulturaHondurena();
 
-        RutasSigem.Asegurar();
+        RutasRhManager.Asegurar();
+
+        // Licencia Community de QuestPDF: obligatorio fijarla antes de generar
+        // cualquier PDF, o la biblioteca lanza al primer reporte (CLAUDE.md).
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
         var configuracion = CargarConfiguracion(out var rutaArchivoConfiguracion);
         var opciones = LeerOpciones(configuracion, rutaArchivoConfiguracion);
 
         ConfigurarSerilog(opciones);
 
-        Log.Information("=== RH Manager inicia. Version {Version} ===", AppInfo.Current.VersionString);
-        Log.Information("Configuracion leida de {Archivo}", rutaArchivoConfiguracion);
-        Log.Information("Registros en {Carpeta}", RutasSigem.CarpetaRegistros);
+        Log.Information("=== RH Manager inicia. Versión {Version} ===", AppInfo.Current.VersionString);
+        Log.Information("Configuración leida de {Archivo}", rutaArchivoConfiguracion);
+        Log.Information("Registros en {Carpeta}", RutasRhManager.CarpetaRegistros);
 
         var builder = MauiApp.CreateBuilder();
 
@@ -101,17 +105,17 @@ public static class MauiProgram
             .Build();
     }
 
-    private static OpcionesSigem LeerOpciones(IConfiguration configuracion, string rutaArchivo)
+    private static OpcionesRhManager LeerOpciones(IConfiguration configuracion, string rutaArchivo)
     {
-        var opciones = configuracion.GetSection(OpcionesSigem.Seccion).Get<OpcionesSigem>()
-            ?? new OpcionesSigem();
+        var opciones = configuracion.GetSection(OpcionesRhManager.Seccion).Get<OpcionesRhManager>()
+            ?? new OpcionesRhManager();
 
-        var cadena = configuracion.GetConnectionString("Sigem");
+        var cadena = configuracion.GetConnectionString("RhManager");
 
         // Sin cadena configurada se usa la base SQLite de la carpeta de datos.
         // Asi la aplicacion arranca en una maquina nueva sin tocar nada.
         opciones.CadenaConexion = string.IsNullOrWhiteSpace(cadena)
-            ? RutasSigem.CadenaConexionPorOmision
+            ? RutasRhManager.CadenaConexionPorOmision
             : cadena;
 
         opciones.RutaArchivoConfiguracion = rutaArchivo;
@@ -120,7 +124,7 @@ public static class MauiProgram
     }
 
     /// <summary>Serilog a archivo diario. Es el registro que se revisa cuando algo falla.</summary>
-    private static void ConfigurarSerilog(OpcionesSigem opciones)
+    private static void ConfigurarSerilog(OpcionesRhManager opciones)
     {
         if (!Enum.TryParse<LogEventLevel>(opciones.NivelRegistroMinimo, ignoreCase: true, out var nivel))
         {
@@ -137,7 +141,7 @@ public static class MauiProgram
             .MinimumLevel.Is(nivel)
             .Enrich.FromLogContext()
             .WriteTo.File(
-                path: RutasSigem.ArchivoRegistro,
+                path: RutasRhManager.ArchivoRegistro,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: Math.Max(opciones.DiasRetencionRegistros, 1),
                 flushToDiskInterval: TimeSpan.FromSeconds(1),
@@ -150,7 +154,7 @@ public static class MauiProgram
     /// resolver una pagina sin registrar cierra la aplicacion al navegar, sin
     /// excepcion visible (CLAUDE.md, regla 1).
     /// </summary>
-    private static void RegistrarDependencias(IServiceCollection servicios, OpcionesSigem opciones)
+    private static void RegistrarDependencias(IServiceCollection servicios, OpcionesRhManager opciones)
     {
         // Estado y configuracion: una sola instancia para toda la aplicacion.
         servicios.AddSingleton(opciones);
@@ -163,7 +167,7 @@ public static class MauiProgram
         // El contexto de datos SIEMPRE por fabrica, nunca inyectado directo:
         // MAUI no tiene ambito por peticion y DbContext no es seguro entre
         // hilos (CLAUDE.md, regla 2).
-        servicios.AddDbContextFactory<ContextoSigem>(constructor =>
+        servicios.AddDbContextFactory<ContextoRhManager>(constructor =>
             constructor.UseSqlite(opciones.CadenaConexion));
 
         // Servicios de plataforma, sin estado.
@@ -182,6 +186,12 @@ public static class MauiProgram
         servicios.AddTransient<IServicioFicha, ServicioFicha>();
         servicios.AddTransient<IServicioResumen, ServicioResumen>();
         servicios.AddTransient<IServicioAlertas, ServicioAlertas>();
+        servicios.AddTransient<IServicioReportes, ServicioReportes>();
+        servicios.AddTransient<IServicioNovedades, ServicioNovedades>();
+        servicios.AddTransient<IServicioDocumentos, ServicioDocumentos>();
+        servicios.AddTransient<IServicioCatalogos, ServicioCatalogos>();
+        servicios.AddTransient<IServicioRespaldos, ServicioRespaldos>();
+        servicios.AddSingleton<IServicioArchivos, ServicioArchivos>();
 
         // Contenedor de navegacion.
         servicios.AddSingleton<AppShell>();

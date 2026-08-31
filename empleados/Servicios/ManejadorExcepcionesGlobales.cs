@@ -75,12 +75,12 @@ public sealed class ManejadorExcepcionesGlobales
 
         try
         {
-            _registro.LogCritical(excepcion, "Excepcion no controlada en {Origen}. Terminando: {Terminando}",
+            _registro.LogCritical(excepcion, "Excepción no controlada en {Origen}. Terminando: {Terminando}",
                 origen, terminando);
         }
         catch (Exception fallo)
         {
-            RegistroEmergencia.Escribir("Fallo el propio registro al anotar la excepcion", fallo);
+            RegistroEmergencia.Escribir("Falló el propio registro al anotar la excepción", fallo);
         }
 
         if (terminando)
@@ -110,12 +110,12 @@ public sealed class ManejadorExcepcionesGlobales
                         "Ocurrio un problema inesperado",
                         "RH Manager detecto un error y lo registro para revisarlo. Puede continuar trabajando."
                             + Environment.NewLine + Environment.NewLine
-                            + "El detalle quedo guardado en:" + Environment.NewLine
-                            + Configuracion.RutasSigem.CarpetaRegistros);
+                            + "El detalle quedó guardado en:" + Environment.NewLine
+                            + Configuracion.RutasRhManager.CarpetaRegistros);
                 }
                 catch (Exception fallo)
                 {
-                    RegistroEmergencia.Escribir("Fallo al mostrar la ventana de error controlada", fallo);
+                    RegistroEmergencia.Escribir("Falló al mostrar la ventana de error controlada", fallo);
                 }
                 finally
                 {
@@ -126,7 +126,7 @@ public sealed class ManejadorExcepcionesGlobales
         catch (Exception fallo)
         {
             Interlocked.Exchange(ref _mostrandoError, 0);
-            RegistroEmergencia.Escribir("Fallo al despachar la ventana de error desde " + origen, fallo);
+            RegistroEmergencia.Escribir("Falló al despachar la ventana de error desde " + origen, fallo);
         }
     }
 }

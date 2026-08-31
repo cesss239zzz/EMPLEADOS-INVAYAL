@@ -8,13 +8,13 @@ namespace empleados.Servicios;
 /// <inheritdoc />
 public sealed class ServicioFicha : IServicioFicha
 {
-    private readonly IDbContextFactory<ContextoSigem> _fabrica;
+    private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly IContextoEmpresa _contextoEmpresa;
     private readonly SesionUsuario _sesion;
     private readonly ILogger<ServicioFicha> _registro;
 
     public ServicioFicha(
-        IDbContextFactory<ContextoSigem> fabrica,
+        IDbContextFactory<ContextoRhManager> fabrica,
         IContextoEmpresa contextoEmpresa,
         SesionUsuario sesion,
         ILogger<ServicioFicha> registro)
@@ -60,17 +60,18 @@ public sealed class ServicioFicha : IServicioFicha
                 c.Telefono,
                 c.Correo,
                 c.Direccion,
-                Puesto = c.Puesto!.Nombre,
-                Departamento = c.Departamento!.Nombre,
-                Sucursal = c.Sucursal!.Nombre,
-                Salario = puedeVerSalario ? (decimal?)c.SalarioBase : null
+                // Union externa: los tres catalogos son opcionales (CR-05).
+                Puesto = c.Puesto == null ? null : c.Puesto.Nombre,
+                Departamento = c.Departamento == null ? null : c.Departamento.Nombre,
+                Sucursal = c.Sucursal == null ? null : c.Sucursal.Nombre,
+                Salario = puedeVerSalario ? c.SalarioBase : null
             })
             .FirstOrDefaultAsync(cancelacion)
             .ConfigureAwait(false);
 
         if (cabecera is null)
         {
-            _registro.LogWarning("Se pidio la ficha {Id}, que no existe en la empresa activa.", colaboradorId);
+            _registro.LogWarning("Se pidió la ficha {Id}, que no existe en la empresa activa.", colaboradorId);
             return null;
         }
 
@@ -117,8 +118,31 @@ public sealed class ServicioFicha : IServicioFicha
         var documentos = await contexto.Documentos
             .Where(x => x.ColaboradorId == colaboradorId)
             .OrderBy(x => x.TipoDocumento!.Nombre)
-            .Select(x => new LineaDocumento(
-                x.TipoDocumento!.Nombre, x.NombreArchivo, x.FechaEmision, x.FechaVencimiento))
+            .Select(x => new FilaDocumento(
+                x.Id,
+                x.ColaboradorId,
+                x.TipoDocumento!.Nombre,
+                x.NombreArchivo,
+                x.Extension,
+                x.Descripcion,
+                x.FechaEmision,
+                x.FechaVencimiento,
+                x.TamanoBytes,
+                x.TipoDocumento.DiasAvisoAnticipado))
+            .ToListAsync(cancelacion)
+            .ConfigureAwait(false);
+
+        var incidencias = await contexto.Incidencias
+            .Where(x => x.ColaboradorId == colaboradorId)
+            .OrderByDescending(x => x.Fecha)
+            .Select(x => new LineaIncidencia(x.Tipo, x.Fecha, x.Titulo, x.Descripcion))
+            .ToListAsync(cancelacion)
+            .ConfigureAwait(false);
+
+        var vacaciones = await contexto.Vacaciones
+            .Where(x => x.ColaboradorId == colaboradorId)
+            .OrderByDescending(x => x.FechaInicio)
+            .Select(x => new LineaVacacion(x.FechaInicio, x.FechaFin, x.Dias, x.Estado, x.Observacion))
             .ToListAsync(cancelacion)
             .ConfigureAwait(false);
 
@@ -149,9 +173,12 @@ public sealed class ServicioFicha : IServicioFicha
             cabecera.Departamento,
             cabecera.Sucursal,
             cabecera.Salario,
+            puedeVerSalario,
             contactos,
             movimientos,
             contratos,
-            documentos);
+            documentos,
+            incidencias,
+            vacaciones);
     }
 }

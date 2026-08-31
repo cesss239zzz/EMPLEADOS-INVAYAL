@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Apartado de catalogos, dentro de Configuracion.
+
+    Aca el usuario crea, edita, activa y elimina los valores de todos los
+    desplegables del sistema (solicitud de cambios, CR-06). Nada viene precargado
+    de fabrica: la lista arranca vacia y la llena quien conoce su empresa.
+
+    La tabla y el formulario se turnan en el mismo espacio, igual que en el
+    selector de empresa.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:srv="clr-namespace:empleados.Servicios"
+             x:Class="empleados.Vistas.Paneles.PanelCatalogos"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="32,26,32,32" RowSpacing="18">
+
+        <!-- ─── Cabecera ─── -->
+        <VerticalStackLayout Grid.Row="0" Spacing="10">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloSeccion}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <!-- Aviso de vuelta al formulario de captura (CR-05). Solo aparece si
+                 se llego aca desde un desplegable vacio del alta de colaborador. -->
+            <Border IsVisible="{Binding VolverAEdicionPendiente}"
+                    BackgroundColor="{StaticResource AzulClaro}"
+                    Stroke="{StaticResource Accion}"
+                    StrokeThickness="1"
+                    Padding="16,12"
+                    StrokeShape="RoundRectangle 6,6,6,6">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                    <Label Grid.Column="0"
+                           Style="{StaticResource Cuerpo}"
+                           VerticalOptions="Center"
+                           Text="Dejo un expediente a medio capturar. Cree acá los valores que le faltaban y vuelva: el formulario lo espera con todo lo que ya escribió." />
+                    <Button Grid.Column="1"
+                            Text="Volver al formulario"
+                            Style="{StaticResource BotonPrimario}"
+                            VerticalOptions="Center"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding VolverAEdicionCommand}" />
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+
+        <!-- ─── Subsecciones de Configuración: catálogos o respaldos ─── -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Superficie}"
+                Stroke="{StaticResource Linea}"
+                StrokeThickness="1"
+                Padding="6"
+                Margin="0,0,0,10"
+                HorizontalOptions="Start"
+                StrokeShape="RoundRectangle 6,6,6,6">
+            <HorizontalStackLayout Spacing="4">
+                <Button Text="Catálogos"
+                        Style="{StaticResource BotonPlano}"
+                        TextColor="{StaticResource Accion}"
+                        Command="{Binding CambiarSubseccionCommand}"
+                        CommandParameter="Catalogos" />
+                <Button Text="Respaldos"
+                        Style="{StaticResource BotonPlano}"
+                        Command="{Binding CambiarSubseccionCommand}"
+                        CommandParameter="Respaldos" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- ─── Pestañas de catálogo ─── -->
+        <Border Grid.Row="2"
+                BackgroundColor="{StaticResource Superficie}"
+                Stroke="{StaticResource Linea}"
+                StrokeThickness="1"
+                Padding="6"
+                StrokeShape="RoundRectangle 6,6,6,6">
+            <HorizontalStackLayout Spacing="4"
+                                   BindableLayout.ItemsSource="{Binding PestanasCatalogo}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PestanaCatalogo">
+                        <Button Text="{Binding Nombre}"
+                                Style="{StaticResource BotonPlano}"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=CambiarCatalogoCommand}"
+                                CommandParameter="{Binding .}" />
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- ═══════════════ TABLA ═══════════════ -->
+        <Grid Grid.Row="3" RowDefinitions="Auto,*" RowSpacing="14"
+              IsVisible="{Binding TablaCatalogoVisible}">
+
+            <!-- Buscador y acciones -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+
+                <Border Grid.Column="0"
+                        Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                        MaximumWidthRequest="360" HorizontalOptions="Start"
+                        StrokeShape="RoundRectangle 4,4,4,4">
+                    <Entry Text="{Binding BusquedaCatalogo}"
+                           Style="{StaticResource Campo}"
+                           Placeholder="Buscar por nombre"
+                           Margin="8,0" />
+                </Border>
+
+                <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                    <CheckBox IsChecked="{Binding MostrarInactivos}"
+                              Color="{StaticResource Accion}"
+                              VerticalOptions="Center" />
+                    <Label Text="Ver inactivos"
+                           Style="{StaticResource CuerpoSuave}"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <Label Grid.Column="2"
+                       Text="{Binding ConteoCatalogo}"
+                       Style="{StaticResource DatoSuave}"
+                       VerticalOptions="Center"
+                       Margin="8,0" />
+
+                <Button Grid.Column="3"
+                        Text="{Binding TextoNuevoCatalogo}"
+                        Style="{StaticResource BotonPrimario}"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding PuedeCapturar}"
+                        IsEnabled="{Binding NoEstaOcupado}"
+                        Command="{Binding NuevoValorCatalogoCommand}" />
+            </Grid>
+
+            <!-- Lista de valores -->
+            <Border Grid.Row="1" Style="{StaticResource Tarjeta}"
+                    StrokeShape="RoundRectangle 6,6,6,6" Padding="0">
+                <Grid RowDefinitions="Auto,*">
+
+                    <!-- Encabezado de la tabla -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,150,110,Auto"
+                          BackgroundColor="{StaticResource SuperficieSuave}"
+                          Padding="20,12" ColumnSpacing="12">
+                        <Label Grid.Column="0" Text="NOMBRE" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Grid.Column="1" Text="EN USO" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Grid.Column="2" Text="ESTADO" Style="{StaticResource EtiquetaCampo}" />
+                        <Label Grid.Column="3" Text="ACCIONES" Style="{StaticResource EtiquetaCampo}"
+                               WidthRequest="230" />
+                    </Grid>
+
+                    <BoxView Grid.Row="0" Color="{StaticResource Linea}" HeightRequest="1"
+                             VerticalOptions="End" />
+
+                    <!-- Estado vacio -->
+                    <VerticalStackLayout Grid.Row="1" Spacing="12" Padding="40,50"
+                                         IsVisible="{Binding CatalogoVacio}"
+                                         HorizontalOptions="Center">
+                        <Label Text="Catálogo vacio"
+                               Style="{StaticResource TituloSeccion}"
+                               HorizontalOptions="Center" />
+                        <Label Text="{Binding TextoVacioCatalogo}"
+                               Style="{StaticResource CuerpoSuave}"
+                               HorizontalTextAlignment="Center"
+                               MaximumWidthRequest="480" />
+                        <Button Text="{Binding TextoNuevoCatalogo}"
+                                Style="{StaticResource BotonPrimario}"
+                                HorizontalOptions="Center"
+                                Margin="0,6,0,0"
+                                IsVisible="{Binding PuedeCapturar}"
+                                IsEnabled="{Binding NoEstaOcupado}"
+                                Command="{Binding NuevoValorCatalogoCommand}" />
+                    </VerticalStackLayout>
+
+                    <CollectionView Grid.Row="1"
+                                    ItemsSource="{Binding ValoresCatalogo}"
+                                    SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="srv:FilaCatalogo">
+                                <Grid ColumnDefinitions="*,150,110,Auto"
+                                      Padding="20,14" ColumnSpacing="12">
+
+                                    <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                        <Label Text="{Binding Nombre}" Style="{StaticResource Cuerpo}" />
+                                        <Label Text="{Binding Detalle}"
+                                               Style="{StaticResource CuerpoSuave}"
+                                               FontSize="11"
+                                               IsVisible="{Binding Detalle, Converter={StaticResource HayTexto}}" />
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="1"
+                                           Text="{Binding UsoTexto}"
+                                           Style="{StaticResource DatoSuave}"
+                                           VerticalOptions="Center" />
+
+                                    <Border Grid.Column="2"
+                                            Padding="10,3"
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Center"
+                                            BackgroundColor="{Binding Activo, Converter={StaticResource FondoActivo}}"
+                                            Stroke="Transparent"
+                                            StrokeShape="RoundRectangle 10,10,10,10">
+                                        <Label Text="{Binding EstadoTexto}"
+                                               FontSize="11"
+                                               TextColor="{Binding Activo, Converter={StaticResource ColorActivo}}" />
+                                    </Border>
+
+                                    <HorizontalStackLayout Grid.Column="3" Spacing="6"
+                                                           WidthRequest="230"
+                                                           VerticalOptions="Center">
+                                        <Button Text="Editar"
+                                                Style="{StaticResource BotonPlano}"
+                                                FontSize="12"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=EditarValorCatalogoCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="{Binding AccionActivarTexto}"
+                                                Style="{StaticResource BotonPlano}"
+                                                FontSize="12"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=AlternarActivoCatalogoCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        <Button Text="Eliminar"
+                                                Style="{StaticResource BotonPlano}"
+                                                FontSize="12"
+                                                TextColor="{StaticResource Sello}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=EliminarValorCatalogoCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════ FORMULARIO ═══════════════ -->
+        <ScrollView Grid.Row="3" IsVisible="{Binding ModoFormularioCatalogo}">
+            <VerticalStackLayout Spacing="18" MaximumWidthRequest="720" HorizontalOptions="Start">
+
+                <Label Text="{Binding TituloFormularioCatalogo}" Style="{StaticResource TituloSeccion}" />
+
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="16">
+
+                        <!-- Nombre: comun a los cinco catalogos -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Nombre *" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                    BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                    StrokeShape="RoundRectangle 4,4,4,4">
+                                <Entry Text="{Binding NombreCatalogo}" Style="{StaticResource Campo}"
+                                       Margin="6,0" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- ─── Solo puesto ─── -->
+                        <VerticalStackLayout Spacing="6" IsVisible="{Binding EsCatalogoPuesto}">
+                            <Label Text="Departamento (opcional)" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                    BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                    StrokeShape="RoundRectangle 4,4,4,4">
+                                <Picker ItemsSource="{Binding DepartamentosCatalogo}"
+                                        ItemDisplayBinding="{Binding Nombre}"
+                                        SelectedItem="{Binding DepartamentoCatalogo}"
+                                        Title="Sin departamento"
+                                        FontSize="14" TextColor="{StaticResource Texto}"
+                                        BackgroundColor="Transparent" HeightRequest="40" />
+                            </Border>
+                            <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                   Text="Un puesto puede existir sin departamento. Déjelo en blanco si no aplica." />
+                        </VerticalStackLayout>
+
+                        <!-- ─── Solo sucursal ─── -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto"
+                              IsVisible="{Binding EsCatalogoSucursal}">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Código *" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding CodigoSucursal}" Style="{StaticResource Campo}"
+                                           Placeholder="CM" Margin="6,0" />
+                                </Border>
+                                <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                       Text="Abreviatura para listados y reportes. Debe ser unica." />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Teléfono" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding TelefonoSucursal}" Style="{StaticResource Campo}"
+                                           Keyboard="Telephone" Placeholder="2234-5600" Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                <Label Text="Dirección" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding DireccionSucursal}" Style="{StaticResource Campo}"
+                                           Margin="6,0" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <!-- ─── Tipo de contrato ─── -->
+                        <HorizontalStackLayout Spacing="8" IsVisible="{Binding EsCatalogoTipoContrato}">
+                            <CheckBox IsChecked="{Binding RequiereVencimientoCatalogo}"
+                                      Color="{StaticResource Accion}" VerticalOptions="Center" />
+                            <Label Text="Este tipo de contrato exige fecha de vencimiento"
+                                   Style="{StaticResource Cuerpo}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <!-- ─── Tipo de documento ─── -->
+                        <VerticalStackLayout Spacing="16" IsVisible="{Binding EsCatalogoTipoDocumento}">
+
+                            <HorizontalStackLayout Spacing="8">
+                                <CheckBox IsChecked="{Binding RequiereVencimientoCatalogo}"
+                                          Color="{StaticResource Accion}" VerticalOptions="Center" />
+                                <Label Text="Este tipo de documento vence"
+                                       Style="{StaticResource Cuerpo}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+
+                            <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                   Text="Si no vence, al capturar el documento el campo de vencimiento queda deshabilitado." />
+
+                            <Grid ColumnDefinitions="120,140,*" ColumnSpacing="12"
+                                  IsVisible="{Binding VigenciaHabilitada}">
+
+                                <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                    <Label Text="Vigencia" Style="{StaticResource EtiquetaCampo}" />
+                                    <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                            BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                            StrokeShape="RoundRectangle 4,4,4,4">
+                                        <Entry Text="{Binding VigenciaCatalogo}" Style="{StaticResource Campo}"
+                                               Keyboard="Numeric" Placeholder="1" Margin="6,0" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                    <Label Text="Unidad" Style="{StaticResource EtiquetaCampo}" />
+                                    <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                            BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                            StrokeShape="RoundRectangle 4,4,4,4">
+                                        <Picker ItemsSource="{Binding UnidadesVigencia}"
+                                                ItemDisplayBinding="{Binding Nombre}"
+                                                SelectedItem="{Binding UnidadVigenciaCatalogo}"
+                                                FontSize="14" TextColor="{StaticResource Texto}"
+                                                BackgroundColor="Transparent" HeightRequest="40" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Column="2" Spacing="6">
+                                    <Label Text="Avisar con (días de anticipación)"
+                                           Style="{StaticResource EtiquetaCampo}" />
+                                    <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                            BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                            MaximumWidthRequest="160" HorizontalOptions="Start"
+                                            StrokeShape="RoundRectangle 4,4,4,4">
+                                        <Entry Text="{Binding DiasAvisoCatalogo}" Style="{StaticResource Campo}"
+                                               Keyboard="Numeric" Placeholder="30" Margin="6,0" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                   IsVisible="{Binding VigenciaHabilitada}"
+                                   Text="Deje la vigencia en blanco si cada documento de este tipo vence en una fecha distinta: entonces se captura a mano." />
+
+                            <!-- CR-10: la anticipación deja de estar fija en el código -->
+                            <VerticalStackLayout Spacing="6" IsVisible="{Binding VigenciaHabilitada}">
+                                <Label Text="Recordatorios (días antes, separados por coma)"
+                                       Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                        MaximumWidthRequest="220" HorizontalOptions="Start"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Entry Text="{Binding EscalaAvisoCatalogo}"
+                                           Style="{StaticResource Campo}"
+                                           Placeholder="30,15,5" Margin="6,0" />
+                                </Border>
+                                <Label Style="{StaticResource CuerpoSuave}" FontSize="11"
+                                       Text="Con «30,15,5» el aviso aparece 30 días antes y se renueva al llegar a 15 y a 5. Con un solo número, avisa una vez." />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+
+                        <!-- Activo: comun -->
+                        <HorizontalStackLayout Spacing="8">
+                            <CheckBox IsChecked="{Binding ActivoCatalogo}"
+                                      Color="{StaticResource Accion}" VerticalOptions="Center" />
+                            <Label Text="Activo (se ofrece en los desplegables)"
+                                   Style="{StaticResource Cuerpo}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="{Binding ErrorCatalogo}"
+                       IsVisible="{Binding HayErrorCatalogo}"
+                       TextColor="{StaticResource Sello}"
+                       FontSize="13" />
+
+                <HorizontalStackLayout Spacing="12">
+                    <Button Text="Guardar"
+                            Style="{StaticResource BotonPrimario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding GuardarValorCatalogoCommand}" />
+                    <Button Text="Cancelar"
+                            Style="{StaticResource BotonSecundario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding CancelarFormularioCatalogoCommand}" />
+                    <ActivityIndicator IsRunning="{Binding EstaOcupado}"
+                                       IsVisible="{Binding EstaOcupado}"
+                                       Color="{StaticResource Tinta}"
+                                       HeightRequest="20"
+                                       VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentView>

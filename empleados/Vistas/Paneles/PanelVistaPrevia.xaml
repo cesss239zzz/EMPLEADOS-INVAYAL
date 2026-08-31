@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Vista previa de un documento del expediente (solicitud de cambios, CR-09).
+
+    Antes solo se veía el nombre del archivo. Acá se ve el contenido: las
+    imágenes con el control de imagen, y los PDF con el WebView, que en Windows
+    los dibuja de forma nativa.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             x:Class="empleados.Vistas.Paneles.PanelVistaPrevia"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <Grid RowDefinitions="Auto,*" Padding="32,26,32,32" RowSpacing="16">
+
+        <!-- ─── Cabecera y acciones ─── -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                <Label Text="{Binding TituloVistaPrevia}" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloVistaPrevia}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout Grid.Column="1" Spacing="10" VerticalOptions="Center">
+                <Button Text="Descargar"
+                        Style="{StaticResource BotonPrimario}"
+                        IsEnabled="{Binding NoEstaOcupado}"
+                        Command="{Binding DescargarDocumentoCommand}" />
+                <Button Text="Cerrar"
+                        Style="{StaticResource BotonSecundario}"
+                        Command="{Binding CerrarVistaPreviaCommand}" />
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- ─── Contenido ─── -->
+        <Border Grid.Row="1" Style="{StaticResource Tarjeta}"
+                StrokeShape="RoundRectangle 6,6,6,6" Padding="0">
+            <Grid>
+
+                <!-- Imagen -->
+                <ScrollView IsVisible="{Binding HayImagen}">
+                    <Image Source="{Binding ImagenVistaPrevia}"
+                           Aspect="AspectFit"
+                           Margin="16" />
+                </ScrollView>
+
+                <!-- PDF: WebView2 lo dibuja nativamente en Windows -->
+                <WebView Source="{Binding RutaPdfVistaPrevia}"
+                         IsVisible="{Binding HayPdf}" />
+
+                <!-- Ni imagen ni PDF -->
+                <VerticalStackLayout IsVisible="{Binding HayPdf, Converter={StaticResource NoEs}}"
+                                     Spacing="10" Padding="40,60"
+                                     HorizontalOptions="Center" VerticalOptions="Center">
+                    <Label Text="Sin vista previa"
+                           Style="{StaticResource TituloSeccion}"
+                           HorizontalOptions="Center"
+                           IsVisible="{Binding HayImagen, Converter={StaticResource NoEs}}" />
+                    <Label Style="{StaticResource CuerpoSuave}"
+                           HorizontalTextAlignment="Center"
+                           MaximumWidthRequest="420"
+                           IsVisible="{Binding HayImagen, Converter={StaticResource NoEs}}"
+                           Text="Este tipo de archivo no se puede mostrar dentro de la aplicación. Use Descargar para abrirlo con el programa que corresponda." />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentView>

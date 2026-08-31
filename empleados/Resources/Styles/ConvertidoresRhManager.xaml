@@ -33,4 +33,12 @@
     <v:ConvertidorTextoMenu x:Key="TextoMenu" />
     <v:ConvertidorPincelMenu x:Key="PincelMenu" />
 
+    <!-- Catalogos editables. -->
+    <v:ConvertidorHayTexto x:Key="HayTexto" />
+    <v:ConvertidorColorActivo x:Key="ColorActivo" />
+    <v:ConvertidorFondoActivo x:Key="FondoActivo" />
+
+    <!-- Negacion de un booleano, de uso general. -->
+    <v:ConvertidorNoEs x:Key="NoEs" />
+
 </ResourceDictionary>

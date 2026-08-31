@@ -19,7 +19,7 @@ public sealed class ServicioNavegacion : IServicioNavegacion
             var shell = Shell.Current;
             if (shell is null)
             {
-                _registro.LogWarning("Se pidio navegar a {Ruta} pero todavia no hay Shell.", ruta);
+                _registro.LogWarning("Se pidió navegar a {Ruta} pero todavía no hay Shell.", ruta);
                 return;
             }
 

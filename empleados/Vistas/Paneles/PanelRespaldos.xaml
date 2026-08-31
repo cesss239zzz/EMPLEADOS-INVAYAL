@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Respaldo y restauración de la base (solicitud de cambios, CR-12).
+
+    Existe porque el borrado de una empresa es físico y no hay papelera: una
+    confirmación escrita de más se lleva un expediente completo. Con esto, esa
+    pérdida tiene vuelta atrás.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:srv="clr-namespace:empleados.Servicios"
+             x:Class="empleados.Vistas.Paneles.PanelRespaldos"
+             x:DataType="vm:VistaModeloPrincipal">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="32,26,32,32" RowSpacing="18">
+
+        <!-- ─── Cabecera ─── -->
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="{Binding TituloSeccion}" Style="{StaticResource TituloPantalla}" />
+            <Label Text="{Binding SubtituloSeccion}" Style="{StaticResource CuerpoSuave}" />
+        </VerticalStackLayout>
+
+        <!-- ─── Subsecciones de Configuración ─── -->
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Superficie}"
+                Stroke="{StaticResource Linea}"
+                StrokeThickness="1"
+                Padding="6"
+                HorizontalOptions="Start"
+                StrokeShape="RoundRectangle 6,6,6,6">
+            <HorizontalStackLayout Spacing="4">
+                <Button Text="Catálogos"
+                        Style="{StaticResource BotonPlano}"
+                        Command="{Binding CambiarSubseccionCommand}"
+                        CommandParameter="Catalogos" />
+                <Button Text="Respaldos"
+                        Style="{StaticResource BotonPlano}"
+                        TextColor="{StaticResource Accion}"
+                        Command="{Binding CambiarSubseccionCommand}"
+                        CommandParameter="Respaldos" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <!-- ─── Política y acciones ─── -->
+        <Border Grid.Row="2" Style="{StaticResource Tarjeta}"
+                StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+            <VerticalStackLayout Spacing="14">
+                <Label Text="Copias de seguridad" Style="{StaticResource TituloSeccion}" />
+                <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                <Label Text="{Binding PoliticaRespaldos}" Style="{StaticResource Cuerpo}" />
+
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Se guardan en" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Text="{Binding CarpetaRespaldos}" Style="{StaticResource DatoSuave}" />
+                </VerticalStackLayout>
+
+                <HorizontalStackLayout Spacing="12">
+                    <Button Text="Respaldar ahora"
+                            Style="{StaticResource BotonPrimario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding RespaldarAhoraCommand}" />
+                    <Button Text="Abrir la carpeta"
+                            Style="{StaticResource BotonSecundario}"
+                            IsEnabled="{Binding NoEstaOcupado}"
+                            Command="{Binding AbrirCarpetaRespaldosCommand}" />
+                    <ActivityIndicator IsRunning="{Binding EstaOcupado}"
+                                       IsVisible="{Binding EstaOcupado}"
+                                       Color="{StaticResource Tinta}"
+                                       HeightRequest="20"
+                                       VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- ─── Lista de respaldos ─── -->
+        <Border Grid.Row="3" Style="{StaticResource Tarjeta}"
+                StrokeShape="RoundRectangle 6,6,6,6" Padding="0">
+            <Grid RowDefinitions="Auto,Auto,*">
+
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto"
+                      BackgroundColor="{StaticResource SuperficieSuave}"
+                      Padding="20,12">
+                    <Label Grid.Column="0" Text="RESPALDOS DISPONIBLES"
+                           Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="{Binding ResumenRespaldos}"
+                           Style="{StaticResource DatoSuave}" VerticalOptions="Center" />
+                </Grid>
+
+                <BoxView Grid.Row="0" Color="{StaticResource Linea}" HeightRequest="1"
+                         VerticalOptions="End" />
+
+                <!-- Estado vacío -->
+                <VerticalStackLayout Grid.Row="2" Spacing="10" Padding="40,44"
+                                     IsVisible="{Binding SinRespaldos}"
+                                     HorizontalOptions="Center">
+                    <Label Text="Todavía no hay respaldos"
+                           Style="{StaticResource TituloSeccion}"
+                           HorizontalOptions="Center" />
+                    <Label Style="{StaticResource CuerpoSuave}"
+                           HorizontalTextAlignment="Center"
+                           MaximumWidthRequest="460"
+                           Text="El primero se crea solo la próxima vez que abra RH Manager, o ahora mismo con «Respaldar ahora»." />
+                </VerticalStackLayout>
+
+                <CollectionView Grid.Row="2"
+                                ItemsSource="{Binding Respaldos}"
+                                SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="srv:LineaRespaldo">
+                            <Grid ColumnDefinitions="*,Auto,Auto" Padding="20,14" ColumnSpacing="14">
+
+                                <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                    <Label Text="{Binding MomentoTexto}" Style="{StaticResource Cuerpo}" />
+                                    <Label Style="{StaticResource CuerpoSuave}" FontSize="11">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding MotivoTexto}" />
+                                                <Span Text="  ·  " />
+                                                <Span Text="{Binding TamanoTexto}" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </VerticalStackLayout>
+
+                                <Label Grid.Column="1"
+                                       Text="{Binding DiasDeAntiguedad, StringFormat='hace {0} día(s)'}"
+                                       Style="{StaticResource DatoSuave}"
+                                       VerticalOptions="Center" />
+
+                                <Button Grid.Column="2"
+                                        Text="Restaurar"
+                                        Style="{StaticResource BotonPlano}"
+                                        FontSize="12"
+                                        TextColor="{StaticResource Sello}"
+                                        VerticalOptions="Center"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=RestaurarRespaldoCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </Border>
+    </Grid>
+
+</ContentView>

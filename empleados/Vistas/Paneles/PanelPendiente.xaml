@@ -26,14 +26,14 @@
                           StrokeThickness="1.6"
                           WidthRequest="20" HeightRequest="20"
                           VerticalOptions="Center" />
-                    <Label Grid.Column="1" Text="Seccion en construccion"
+                    <Label Grid.Column="1" Text="Sección en construcción"
                            Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
                 </Grid>
                 <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
 
                 <VerticalStackLayout Padding="22,20" Spacing="14">
                     <Label Style="{StaticResource Cuerpo}"
-                           Text="Esta seccion forma parte del alcance completo de SIGEM y se construye en una etapa posterior. El menu lateral, la barra superior, el resumen, el directorio de colaboradores y la ficha del expediente ya estan terminados." />
+                           Text="Esta sección forma parte del alcance completo de RH Manager y se construye en una etapa posterior. El menú lateral, la barra superior, el resumen, el directorio de colaboradores y la ficha del expediente ya están terminados." />
                     <Button Text="Ir al resumen"
                             Style="{StaticResource BotonSecundario}"
                             HorizontalOptions="Start"

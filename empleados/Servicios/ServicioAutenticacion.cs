@@ -13,12 +13,12 @@ public sealed class ServicioAutenticacion : IServicioAutenticacion
     /// <summary>Duracion del bloqueo temporal.</summary>
     private static readonly TimeSpan DuracionBloqueo = TimeSpan.FromMinutes(15);
 
-    private readonly IDbContextFactory<ContextoSigem> _fabrica;
+    private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly SesionUsuario _sesion;
     private readonly ILogger<ServicioAutenticacion> _registro;
 
     public ServicioAutenticacion(
-        IDbContextFactory<ContextoSigem> fabrica,
+        IDbContextFactory<ContextoRhManager> fabrica,
         SesionUsuario sesion,
         ILogger<ServicioAutenticacion> registro)
     {
@@ -36,7 +36,7 @@ public sealed class ServicioAutenticacion : IServicioAutenticacion
         if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(contrasena))
         {
             return new IntentoAcceso(ResultadoAcceso.CredencialesInvalidas,
-                "Escriba su usuario y su contrasena.");
+                "Escriba su usuario y su contraseña.");
         }
 
         var usuarioNormalizado = nombreUsuario.Trim();
@@ -53,26 +53,26 @@ public sealed class ServicioAutenticacion : IServicioAutenticacion
             _registro.LogWarning("Intento de acceso con usuario inexistente: {Usuario}", usuarioNormalizado);
 
             return new IntentoAcceso(ResultadoAcceso.CredencialesInvalidas,
-                "Usuario o contrasena incorrectos.");
+                "Usuario o contraseña incorrectos.");
         }
 
         if (usuario.BloqueadoHasta is { } hasta && hasta > DateTime.UtcNow)
         {
             var restantes = (int)Math.Ceiling((hasta - DateTime.UtcNow).TotalMinutes);
-            _registro.LogWarning("Acceso rechazado: la cuenta {Usuario} esta bloqueada {Minutos} minuto(s) mas.",
+            _registro.LogWarning("Acceso rechazado: la cuenta {Usuario} está bloqueada {Minutos} minuto(s) más.",
                 usuario.NombreUsuario, restantes);
 
             return new IntentoAcceso(ResultadoAcceso.Bloqueado,
-                "La cuenta esta bloqueada por intentos fallidos. Vuelva a intentar en "
+                "La cuenta está bloqueada por intentos fallidos. Vuelva a intentar en "
                     + restantes + " minuto(s).", restantes);
         }
 
         if (!usuario.Activo)
         {
-            _registro.LogWarning("Acceso rechazado: la cuenta {Usuario} esta desactivada.", usuario.NombreUsuario);
+            _registro.LogWarning("Acceso rechazado: la cuenta {Usuario} está desactivada.", usuario.NombreUsuario);
 
             return new IntentoAcceso(ResultadoAcceso.UsuarioInactivo,
-                "La cuenta esta desactivada. Comuniquese con el administrador.");
+                "La cuenta está desactivada. Comuníquese con el administrador.");
         }
 
         // BCrypt.Verify es deliberadamente lento: ese costo es la defensa contra
@@ -94,7 +94,7 @@ public sealed class ServicioAutenticacion : IServicioAutenticacion
                     usuario.NombreUsuario, DuracionBloqueo.TotalMinutes, IntentosPermitidos);
 
                 return new IntentoAcceso(ResultadoAcceso.Bloqueado,
-                    "Demasiados intentos fallidos. La cuenta quedo bloqueada por "
+                    "Demasiados intentos fallidos. La cuenta quedó bloqueada por "
                         + (int)DuracionBloqueo.TotalMinutes + " minutos.",
                     (int)DuracionBloqueo.TotalMinutes);
             }
@@ -102,11 +102,11 @@ public sealed class ServicioAutenticacion : IServicioAutenticacion
             await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
 
             var quedan = IntentosPermitidos - usuario.IntentosFallidos;
-            _registro.LogWarning("Contrasena incorrecta para {Usuario}. Quedan {Quedan} intento(s).",
+            _registro.LogWarning("Contraseña incorrecta para {Usuario}. Quedan {Quedan} intento(s).",
                 usuario.NombreUsuario, quedan);
 
             return new IntentoAcceso(ResultadoAcceso.CredencialesInvalidas,
-                "Usuario o contrasena incorrectos. Le quedan " + quedan + " intento(s) antes del bloqueo.");
+                "Usuario o contraseña incorrectos. Le quedan " + quedan + " intento(s) antes del bloqueo.");
         }
 
         usuario.IntentosFallidos = 0;

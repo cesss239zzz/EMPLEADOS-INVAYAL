@@ -22,7 +22,9 @@ Cliente: Inversiones Ayala Alvarenga S. de R.L. (Honduras).
 | Notificaciones | Microsoft.Windows.AppNotifications | |
 | Registro | Microsoft.Extensions.Logging + Serilog a archivo | |
 
-**Idioma:** código, clases y propiedades en español (`Colaborador`, `FechaIngreso`). Comentarios en español. Nombres de tabla y columna en `snake_case` español.
+**Idioma:** código, clases y propiedades en español (`Colaborador`, `FechaIngreso`). Comentarios en español.
+
+**Nombres en la base:** tablas en `snake_case` español (`contacto_emergencia`, `movimiento_laboral`). **Columnas en PascalCase**, igual que la propiedad de C# que las respalda (`NombreUsuario`, `FechaIngreso`, `HashContrasena`). Es así desde la migración inicial y se queda así: renombrar columnas obligaría a reconstruir cada tabla en SQLite, sin ganancia funcional alguna. No migrar columnas a `snake_case`.
 
 **Especificación funcional completa** — leerla antes de implementar cualquier módulo:
 - `/docs/SIGEM-modelo-datos.md`

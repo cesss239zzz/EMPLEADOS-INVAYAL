@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    Ficha del colaborador, segun la maqueta "Ficha del Colaborador SIGEM":
+    Ficha del colaborador, segun la maqueta "Ficha del Colaborador":
     migas y acciones arriba, tarjeta de identidad, pestanas a la izquierda y,
     a la derecha, expediente digital y acciones rapidas.
 
@@ -45,12 +45,13 @@
                         StrokeThickness="1"
                         Padding="16,0"
                         HeightRequest="42"
+                        IsVisible="{Binding PuedeCapturar}"
                         VerticalOptions="Center">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="4" />
                     </Border.StrokeShape>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Editar informacion" />
+                        <TapGestureRecognizer Command="{Binding EditarColaboradorCommand}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
                         <Path Data="M3,17 V13.6 L13.4,3.2 L16.8,6.6 L6.4,17 Z M12,4.6 L15.4,8"
@@ -58,7 +59,7 @@
                               StrokeThickness="1.6"
                               WidthRequest="18" HeightRequest="18"
                               VerticalOptions="Center" />
-                        <Label Text="Editar informacion" Style="{StaticResource Cuerpo}" VerticalOptions="Center" />
+                        <Label Text="Editar información" Style="{StaticResource Cuerpo}" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </Border>
 
@@ -73,7 +74,7 @@
                         <RoundRectangle CornerRadius="4" />
                     </Border.StrokeShape>
                     <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Exportar ficha" />
+                        <TapGestureRecognizer Command="{Binding ExportarFichaCommand}" />
                     </Border.GestureRecognizers>
                     <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
                         <Path Data="M10,3 V12.5 M6.4,9 L10,12.6 L13.6,9 M3.5,17 H16.5"
@@ -143,25 +144,25 @@
                         <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="20">
                             <VerticalStackLayout Grid.Column="0" Spacing="5">
                                 <Label Text="Cargo actual" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Text="{Binding Ficha.Puesto}" Style="{StaticResource Cuerpo}" />
+                                <Label Text="{Binding Ficha.PuestoTexto}" Style="{StaticResource Cuerpo}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="5">
                                 <Label Text="Identidad" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Text="{Binding Ficha.Identidad}" Style="{StaticResource Dato}" />
+                                <Label Text="{Binding Ficha.IdentidadTexto}" Style="{StaticResource Dato}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="2" Spacing="5">
                                 <Label Text="Departamento" Style="{StaticResource EtiquetaCampo}" />
-                                <Label Text="{Binding Ficha.Departamento}" Style="{StaticResource Cuerpo}" />
+                                <Label Text="{Binding Ficha.DepartamentoTexto}" Style="{StaticResource Cuerpo}" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="3" Spacing="5">
-                                <Label Text="Ubicacion" Style="{StaticResource EtiquetaCampo}" />
+                                <Label Text="Ubicación" Style="{StaticResource EtiquetaCampo}" />
                                 <HorizontalStackLayout Spacing="6">
                                     <Path Data="M10,2.5 C7.2,2.5 5,4.7 5,7.5 C5,11.4 10,17.5 10,17.5 C10,17.5 15,11.4 15,7.5 C15,4.7 12.8,2.5 10,2.5 Z M10,5.6 A2,2 0 1,0 10,9.6 A2,2 0 1,0 10,5.6 Z"
                                           Stroke="{StaticResource PincelAceroSuave}"
                                           StrokeThickness="1.5"
                                           WidthRequest="16" HeightRequest="20"
                                           VerticalOptions="Center" />
-                                    <Label Text="{Binding Ficha.Sucursal}" Style="{StaticResource Cuerpo}"
+                                    <Label Text="{Binding Ficha.SucursalTexto}" Style="{StaticResource Cuerpo}"
                                            VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
@@ -178,7 +179,7 @@
                     <VerticalStackLayout>
 
                         <!-- Tira de pestanas -->
-                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" Padding="8,0">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto" Padding="8,0">
                             <Grid Grid.Column="0" RowDefinitions="*,3" Padding="18,16,18,0">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding IrAPestanaCommand}" CommandParameter="General" />
@@ -234,6 +235,20 @@
                                 <BoxView Grid.Row="1" Color="{StaticResource Accion}"
                                          IsVisible="{Binding EsPestanaContactos}" />
                             </Grid>
+
+                            <Grid Grid.Column="4" RowDefinitions="*,3" Padding="18,16,18,0">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding IrAPestanaCommand}" CommandParameter="Novedades" />
+                                </Grid.GestureRecognizers>
+                                <Label Grid.Row="0" Text="Novedades"
+                                       FontFamily="{StaticResource FuenteTexto}"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       Margin="0,0,0,12"
+                                       TextColor="{Binding EsPestanaNovedades, Converter={StaticResource TextoPestana}}" />
+                                <BoxView Grid.Row="1" Color="{StaticResource Accion}"
+                                         IsVisible="{Binding EsPestanaNovedades}" />
+                            </Grid>
                         </Grid>
                         <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
 
@@ -247,7 +262,7 @@
                                           StrokeThickness="1.6"
                                           WidthRequest="20" HeightRequest="20"
                                           VerticalOptions="Center" />
-                                    <Label Text="Informacion personal" Style="{StaticResource TituloSeccion}"
+                                    <Label Text="Información personal" Style="{StaticResource TituloSeccion}"
                                            VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                                 <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
@@ -278,26 +293,26 @@
                                     </VerticalStackLayout>
 
                                     <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                                        <Label Text="Direccion residencial" Style="{StaticResource EtiquetaCampo}" />
+                                        <Label Text="Dirección residencial" Style="{StaticResource EtiquetaCampo}" />
                                         <Border BackgroundColor="{StaticResource SuperficieSuave}"
                                                 Stroke="{StaticResource Linea}" StrokeThickness="1"
                                                 Padding="12,10">
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="4" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding Ficha.Direccion}" Style="{StaticResource ValorFicha}" />
+                                            <Label Text="{Binding Ficha.DireccionTexto}" Style="{StaticResource ValorFicha}" />
                                         </Border>
                                     </VerticalStackLayout>
 
                                     <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
-                                        <Label Text="Telefono" Style="{StaticResource EtiquetaCampo}" />
+                                        <Label Text="Teléfono" Style="{StaticResource EtiquetaCampo}" />
                                         <Border BackgroundColor="{StaticResource SuperficieSuave}"
                                                 Stroke="{StaticResource Linea}" StrokeThickness="1"
                                                 Padding="12,10">
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="4" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding Ficha.Telefono}" Style="{StaticResource Dato}"
+                                            <Label Text="{Binding Ficha.TelefonoTexto}" Style="{StaticResource Dato}"
                                                    VerticalOptions="Center" />
                                         </Border>
                                     </VerticalStackLayout>
@@ -309,7 +324,7 @@
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="4" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding Ficha.Correo}" Style="{StaticResource ValorFicha}"
+                                            <Label Text="{Binding Ficha.CorreoTexto}" Style="{StaticResource ValorFicha}"
                                                    LineBreakMode="TailTruncation" />
                                         </Border>
                                     </VerticalStackLayout>
@@ -323,7 +338,7 @@
                                           StrokeThickness="1.6"
                                           WidthRequest="20" HeightRequest="20"
                                           VerticalOptions="Center" />
-                                    <Label Text="Informacion laboral e institucional"
+                                    <Label Text="Información laboral e institucional"
                                            Style="{StaticResource TituloSeccion}" VerticalOptions="Center" />
                                 </HorizontalStackLayout>
                                 <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
@@ -343,7 +358,7 @@
                                         </Border>
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
-                                        <Label Text="Antiguedad" Style="{StaticResource EtiquetaCampo}" />
+                                        <Label Text="Antigüedad" Style="{StaticResource EtiquetaCampo}" />
                                         <Border BackgroundColor="{StaticResource SuperficieSuave}"
                                                 Stroke="{StaticResource Linea}" StrokeThickness="1"
                                                 Padding="12,10">
@@ -355,7 +370,7 @@
                                     </VerticalStackLayout>
 
                                     <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
-                                        <Label Text="Codigo de expediente" Style="{StaticResource EtiquetaCampo}" />
+                                        <Label Text="Código de expediente" Style="{StaticResource EtiquetaCampo}" />
                                         <Border BackgroundColor="{StaticResource SuperficieSuave}"
                                                 Stroke="{StaticResource Linea}" StrokeThickness="1"
                                                 Padding="12,10">
@@ -387,7 +402,7 @@
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="4" />
                                             </Border.StrokeShape>
-                                            <Label Text="{Binding Ficha.Sucursal}" Style="{StaticResource ValorFicha}" />
+                                            <Label Text="{Binding Ficha.SucursalTexto}" Style="{StaticResource ValorFicha}" />
                                         </Border>
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
@@ -452,7 +467,7 @@
 
                         <!-- ─── HISTORIAL LABORAL ─── -->
                         <VerticalStackLayout Padding="26,22" Spacing="16" IsVisible="{Binding EsPestanaHistorial}">
-                            <Label Text="Linea de tiempo del expediente" Style="{StaticResource TituloSeccion}" />
+                            <Label Text="Línea de tiempo del expediente" Style="{StaticResource TituloSeccion}" />
                             <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Movimientos}">
@@ -556,6 +571,69 @@
                                 </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
+
+                        <!-- ─── NOVEDADES ─── -->
+                        <VerticalStackLayout Padding="26,22" Spacing="22" IsVisible="{Binding EsPestanaNovedades}">
+
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="Incidencias registradas" Style="{StaticResource TituloSeccion}" />
+                                <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Incidencias}" Spacing="10">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="srv:LineaIncidencia">
+                                            <Border BackgroundColor="{StaticResource SuperficieSuave}"
+                                                    Stroke="{StaticResource Linea}" StrokeThickness="1" Padding="0"
+                                                    StrokeShape="RoundRectangle 4,4,4,4">
+                                                <Grid ColumnDefinitions="4,150,*,110" Padding="0,12">
+                                                    <BoxView Grid.Column="0" Color="{StaticResource Ambar}" />
+                                                    <Label Grid.Column="1" Text="{Binding TipoTexto}"
+                                                           Style="{StaticResource Cuerpo}" Margin="14,0,0,0"
+                                                           VerticalOptions="Center" />
+                                                    <Label Grid.Column="2" Text="{Binding Titulo}"
+                                                           Style="{StaticResource CuerpoMenor}"
+                                                           VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                                    <Label Grid.Column="3" Text="{Binding FechaTexto}"
+                                                           Style="{StaticResource Dato}" Margin="0,0,16,0"
+                                                           HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                                <Label Style="{StaticResource CuerpoSuave}"
+                                       IsVisible="{Binding SinIncidencias}"
+                                       Text="Este expediente no tiene incidencias registradas." />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="Vacaciones programadas" Style="{StaticResource TituloSeccion}" />
+                                <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+                                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Vacaciones}" Spacing="10">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="srv:LineaVacacion">
+                                            <Border BackgroundColor="{StaticResource SuperficieSuave}"
+                                                    Stroke="{StaticResource Linea}" StrokeThickness="1" Padding="0"
+                                                    StrokeShape="RoundRectangle 4,4,4,4">
+                                                <Grid ColumnDefinitions="4,*,110,110" Padding="0,12">
+                                                    <BoxView Grid.Column="0" Color="{StaticResource Verde}" />
+                                                    <Label Grid.Column="1" Text="{Binding PeriodoTexto}"
+                                                           Style="{StaticResource Cuerpo}" Margin="14,0,0,0"
+                                                           VerticalOptions="Center" />
+                                                    <Label Grid.Column="2" Text="{Binding DiasTexto}"
+                                                           Style="{StaticResource Dato}" VerticalOptions="Center" />
+                                                    <Label Grid.Column="3" Text="{Binding EstadoTexto}"
+                                                           Style="{StaticResource EtiquetaCampo}" Margin="0,0,16,0"
+                                                           VerticalOptions="Center" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </VerticalStackLayout>
+                                <Label Style="{StaticResource CuerpoSuave}"
+                                       IsVisible="{Binding SinVacaciones}"
+                                       Text="Este expediente no tiene vacaciones programadas." />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>
 
@@ -582,7 +660,7 @@
                                       WidthRequest="20" HeightRequest="20"
                                       VerticalOptions="Center">
                                     <Path.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Adjuntar documento" />
+                                        <TapGestureRecognizer Command="{Binding AdjuntarDocumentoCommand}" />
                                     </Path.GestureRecognizers>
                                 </Path>
                             </Grid>
@@ -591,31 +669,63 @@
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Ficha.Documentos}"
                                                  Padding="12,12" Spacing="4">
                                 <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="srv:LineaDocumento">
+                                    <DataTemplate x:DataType="srv:FilaDocumento">
                                         <Border BackgroundColor="{Binding Situacion, Converter={StaticResource FondoDocumento}}"
                                                 StrokeThickness="0"
                                                 Padding="10,10">
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="4" />
                                             </Border.StrokeShape>
-                                            <Grid ColumnDefinitions="22,*" ColumnSpacing="12">
+                                            <Grid ColumnDefinitions="22,*" ColumnSpacing="12"
+                                                  RowDefinitions="Auto,Auto">
                                                 <Path Grid.Column="0"
                                                       Data="M10,2.5 A7.5,7.5 0 1,0 10,17.5 A7.5,7.5 0 1,0 10,2.5 Z M6.4,10.2 L9,12.8 L13.8,7.6"
                                                       Stroke="{Binding Situacion, Converter={StaticResource PincelDocumento}}"
                                                       StrokeThickness="1.6"
                                                       WidthRequest="20" HeightRequest="20"
                                                       VerticalOptions="Start" />
-                                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="2">
                                                     <Label Text="{Binding Tipo}"
                                                            Style="{StaticResource Cuerpo}"
                                                            FontSize="13.5"
                                                            TextColor="{Binding Situacion, Converter={StaticResource ColorDocumento}}"
                                                            LineBreakMode="TailTruncation" />
-                                                    <Label Text="{Binding DetalleTexto}"
+                                                    <Label Text="{Binding PlazoTexto}"
                                                            Style="{StaticResource DatoSuave}"
                                                            FontSize="11"
                                                            TextColor="{Binding Situacion, Converter={StaticResource ColorDocumento}}" />
+                                                    <Label Text="{Binding NombreArchivo}"
+                                                           Style="{StaticResource DatoSuave}"
+                                                           FontSize="10.5"
+                                                           LineBreakMode="MiddleTruncation" />
                                                 </VerticalStackLayout>
+
+                                                <!-- Las cuatro acciones de CR-09, en el propio renglón -->
+                                                <HorizontalStackLayout Grid.Row="1" Grid.Column="1"
+                                                                       Spacing="2" Margin="0,6,0,0">
+                                                    <Button Text="Ver"
+                                                            Style="{StaticResource BotonPlano}"
+                                                            FontSize="11" Padding="8,0" HeightRequest="28"
+                                                            IsVisible="{Binding TieneVistaPrevia}"
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=VerDocumentoCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                    <Button Text="Descargar"
+                                                            Style="{StaticResource BotonPlano}"
+                                                            FontSize="11" Padding="8,0" HeightRequest="28"
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=DescargarDocumentoCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                    <Button Text="Editar"
+                                                            Style="{StaticResource BotonPlano}"
+                                                            FontSize="11" Padding="8,0" HeightRequest="28"
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=EditarDocumentoCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                    <Button Text="Eliminar"
+                                                            Style="{StaticResource BotonPlano}"
+                                                            FontSize="11" Padding="8,0" HeightRequest="28"
+                                                            TextColor="{StaticResource Sello}"
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:VistaModeloPrincipal}}, Path=EliminarDocumentoCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                </HorizontalStackLayout>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -625,12 +735,12 @@
                             <Label Padding="20,18"
                                    Style="{StaticResource CuerpoSuave}"
                                    IsVisible="{Binding SinDocumentos}"
-                                   Text="Este expediente todavia no tiene documentos digitalizados." />
+                                   Text="Este expediente todavía no tiene documentos digitalizados." />
 
                             <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
                             <Grid Padding="20,15" ColumnDefinitions="*,Auto">
                                 <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Ver documentos" />
+                                    <TapGestureRecognizer Command="{Binding VerDocumentosCommand}" />
                                 </Grid.GestureRecognizers>
                                 <Label Grid.Column="0"
                                        Text="{Binding ConteoDocumentos}"
@@ -670,19 +780,18 @@
 
                             <Button Text="Generar constancia de trabajo (PDF)"
                                     Style="{StaticResource BotonAccionRapida}"
-                                    Command="{Binding PendienteCommand}"
-                                    CommandParameter="Constancia de trabajo"
+                                    Command="{Binding GenerarConstanciaCommand}"
                                     IsEnabled="{Binding NoEstaOcupado}" />
                             <Button Text="Registrar incidencia / memo"
                                     Style="{StaticResource BotonAccionRapida}"
-                                    Command="{Binding PendienteCommand}"
-                                    CommandParameter="Registrar incidencia"
-                                    IsEnabled="{Binding NoEstaOcupado}" />
+                                    Command="{Binding AbrirIncidenciaCommand}"
+                                    IsEnabled="{Binding NoEstaOcupado}"
+                                    IsVisible="{Binding PuedeCapturar}" />
                             <Button Text="Programar vacaciones"
                                     Style="{StaticResource BotonAccionRapida}"
-                                    Command="{Binding PendienteCommand}"
-                                    CommandParameter="Programar vacaciones"
-                                    IsEnabled="{Binding NoEstaOcupado}" />
+                                    Command="{Binding AbrirVacacionesCommand}"
+                                    IsEnabled="{Binding NoEstaOcupado}"
+                                    IsVisible="{Binding PuedeCapturar}" />
                             <Button Text="Volver al directorio"
                                     Style="{StaticResource BotonAccionRapida}"
                                     BackgroundColor="Transparent"

@@ -5,7 +5,7 @@ using empleados.Servicios;
 namespace empleados.Vistas;
 
 /// <summary>
-/// Paleta compartida por los convertidores. Debe seguir a ColoresSigem.xaml:
+/// Paleta compartida por los convertidores. Debe seguir a ColoresRhManager.xaml:
 /// son los mismos valores, aca en codigo porque un convertidor no puede leer
 /// del diccionario de recursos.
 /// </summary>
@@ -20,6 +20,7 @@ internal static class Paleta
     public static readonly Color Acero = Color.FromArgb("#43474D");
     public static readonly Color AceroSuave = Color.FromArgb("#74777E");
     public static readonly Color Linea = Color.FromArgb("#E1E4E8");
+    public static readonly Color LineaFuerte = Color.FromArgb("#C4C6CE");
     public static readonly Color Papel = Color.FromArgb("#F8F9FB");
     public static readonly Color Superficie = Color.FromArgb("#FFFFFF");
 
@@ -41,7 +42,7 @@ public abstract class ConvertidorDeIda : IValueConverter
 
     public object ConvertBack(object? valor, Type tipo, object? parametro, CultureInfo cultura)
         => throw new NotSupportedException(
-            "Los convertidores de presentacion de SIGEM son de un solo sentido.");
+            "Los convertidores de presentación de RH Manager son de un solo sentido.");
 }
 
 /// <summary>
@@ -197,4 +198,41 @@ public sealed class ConvertidorPincelMenu : ConvertidorDeIda
 {
     public override object Convert(object? valor, Type tipo, object? parametro, CultureInfo cultura)
         => valor is true ? new SolidColorBrush(Colors.White) : new SolidColorBrush(Color.FromArgb("#9FB3C8"));
+}
+
+// ─── Catalogos ──────────────────────────────────────────────────────────────
+
+/// <summary>
+/// Muestra un elemento solo si el texto enlazado trae algo. Evita el hueco que
+/// deja una linea secundaria vacia en las filas de catalogo.
+/// </summary>
+public sealed class ConvertidorHayTexto : ConvertidorDeIda
+{
+    public override object Convert(object? valor, Type tipo, object? parametro, CultureInfo cultura)
+        => !string.IsNullOrWhiteSpace(valor as string);
+}
+
+/// <summary>Color del texto de la pastilla de estado de un valor de catalogo.</summary>
+public sealed class ConvertidorColorActivo : ConvertidorDeIda
+{
+    public override object Convert(object? valor, Type tipo, object? parametro, CultureInfo cultura)
+        => valor is true ? Paleta.Verde : Paleta.AceroSuave;
+}
+
+/// <summary>Fondo tenue de esa misma pastilla.</summary>
+public sealed class ConvertidorFondoActivo : ConvertidorDeIda
+{
+    public override object Convert(object? valor, Type tipo, object? parametro, CultureInfo cultura)
+        => valor is true ? Paleta.VerdeTenue : Paleta.AceroTenue;
+}
+
+/// <summary>
+/// Niega un booleano. Sirve para mostrar un elemento justo cuando otro se
+/// oculta —el desplegable contra el atajo "+ Crear nuevo"— sin tener que
+/// declarar una propiedad complementaria por cada caso.
+/// </summary>
+public sealed class ConvertidorNoEs : ConvertidorDeIda
+{
+    public override object Convert(object? valor, Type tipo, object? parametro, CultureInfo cultura)
+        => valor is not true;
 }

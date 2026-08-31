@@ -8,13 +8,13 @@ namespace empleados.Servicios;
 /// <inheritdoc />
 public sealed class ServicioDiagnostico : IServicioDiagnostico
 {
-    private readonly OpcionesSigem _opciones;
-    private readonly IDbContextFactory<ContextoSigem> _fabrica;
+    private readonly OpcionesRhManager _opciones;
+    private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly ILogger<ServicioDiagnostico> _registro;
 
     public ServicioDiagnostico(
-        OpcionesSigem opciones,
-        IDbContextFactory<ContextoSigem> fabrica,
+        OpcionesRhManager opciones,
+        IDbContextFactory<ContextoRhManager> fabrica,
         ILogger<ServicioDiagnostico> registro)
     {
         _opciones = opciones;
@@ -42,7 +42,7 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
 
             if (pendientes.Count > 0)
             {
-                _registro.LogInformation("Aplicando {Cantidad} migracion(es) pendiente(s): {Lista}",
+                _registro.LogInformation("Aplicando {Cantidad} migración(es) pendiente(s): {Lista}",
                     pendientes.Count, string.Join(", ", pendientes));
 
                 // Se aplican solas. Pedirle al usuario de una demostracion que
@@ -51,7 +51,7 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
                 await contexto.Database.MigrateAsync(cancelacion).ConfigureAwait(false);
 
                 _registro.LogInformation("Migraciones aplicadas. Base creada en {Ruta}",
-                    RutasSigem.ArchivoBaseDatos);
+                    RutasRhManager.ArchivoBaseDatos);
             }
 
             // Consulta minima de comprobacion. Empresa no lleva filtro global,
@@ -72,16 +72,16 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
         }
         catch (Exception ex)
         {
-            _registro.LogError(ex, "Fallo la verificacion de la base de datos.");
+            _registro.LogError(ex, "Falló la verificación de la base de datos.");
 
             return new ResultadoDiagnostico(
                 EstadoDiagnostico.MigracionFallida,
                 "No se pudo preparar la base de datos",
-                "RH Manager no logro abrir o actualizar su base de datos local.",
-                "Cierre la aplicacion y vuelva a abrirla." + Environment.NewLine + Environment.NewLine
+                "RH Manager no logróabrir o actualizar su base de datos local.",
+                "Cierre la aplicación y vuelva a abrirla." + Environment.NewLine + Environment.NewLine
                     + "Si el problema sigue, borre el archivo de base y deje que se cree de nuevo:"
-                    + Environment.NewLine + RutasSigem.ArchivoBaseDatos + Environment.NewLine + Environment.NewLine
-                    + "Se perderian los datos de la demostracion, que se vuelven a sembrar solos.",
+                    + Environment.NewLine + RutasRhManager.ArchivoBaseDatos + Environment.NewLine + Environment.NewLine
+                    + "Se perderian los datos de la demostración, que se vuelven a sembrar solos.",
                 ex.ToString());
         }
     }
@@ -95,19 +95,19 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
     {
         try
         {
-            RutasSigem.Asegurar();
+            RutasRhManager.Asegurar();
 
-            var pruebita = Path.Combine(RutasSigem.CarpetaDatos, ".escritura");
+            var pruebita = Path.Combine(RutasRhManager.CarpetaDatos, ".escritura");
             File.WriteAllText(pruebita, "ok");
             File.Delete(pruebita);
 
-            _registro.LogInformation("Carpeta de datos verificada: {Carpeta}", RutasSigem.CarpetaDatos);
+            _registro.LogInformation("Carpeta de datos verificada: {Carpeta}", RutasRhManager.CarpetaDatos);
             return null;
         }
         catch (Exception ex)
         {
             _registro.LogError(ex, "No se puede escribir en la carpeta de datos {Carpeta}",
-                RutasSigem.CarpetaDatos);
+                RutasRhManager.CarpetaDatos);
 
             return new ResultadoDiagnostico(
                 EstadoDiagnostico.CarpetaNoEscribible,
@@ -115,7 +115,7 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
                 "RH Manager necesita esa carpeta para guardar su base de datos y sus registros, "
                     + "y el sistema no se lo permite.",
                 "Verifique que el usuario de Windows tenga permiso de escritura sobre:"
-                    + Environment.NewLine + RutasSigem.CarpetaDatos,
+                    + Environment.NewLine + RutasRhManager.CarpetaDatos,
                 ex.ToString());
         }
     }

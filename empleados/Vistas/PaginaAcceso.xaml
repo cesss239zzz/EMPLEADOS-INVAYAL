@@ -50,17 +50,36 @@
                                ReturnCommand="{Binding AccederCommand}" />
                     </Border>
 
-                    <Label Text="Contrasena" Style="{StaticResource EtiquetaCampo}" />
+                    <Label Text="Contraseña" Style="{StaticResource EtiquetaCampo}" />
                     <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1" Padding="8,0" Margin="0,0,0,4">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="8" />
                         </Border.StrokeShape>
-                        <Entry Text="{Binding Contrasena}"
-                               Style="{StaticResource Campo}"
-                               Placeholder="Contrasena"
-                               IsPassword="True"
-                               IsEnabled="{Binding NoEstaOcupado}"
-                               ReturnCommand="{Binding AccederCommand}" />
+
+                        <!-- El boton "Ver" destapa lo escrito para poder revisarlo.
+                             Solo afecta a la pantalla: la contrasena nunca se
+                             registra ni se guarda (CLAUDE.md, regla 12). -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Entry Grid.Column="0"
+                                   Text="{Binding Contrasena}"
+                                   Style="{StaticResource Campo}"
+                                   Placeholder="Contraseña"
+                                   IsPassword="{Binding ContrasenaOculta}"
+                                   IsEnabled="{Binding NoEstaOcupado}"
+                                   ReturnCommand="{Binding AccederCommand}" />
+
+                            <Button Grid.Column="1"
+                                    Text="{Binding TextoVerContrasena}"
+                                    Command="{Binding AlternarVerContrasenaCommand}"
+                                    IsEnabled="{Binding NoEstaOcupado}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Accion}"
+                                    FontSize="12"
+                                    Padding="8,0"
+                                    MinimumWidthRequest="58"
+                                    HeightRequest="34"
+                                    VerticalOptions="Center" />
+                        </Grid>
                     </Border>
 
                     <!-- Nunca dice si fallo el usuario o la contrasena -->

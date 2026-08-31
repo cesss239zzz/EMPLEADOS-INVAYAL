@@ -36,7 +36,8 @@ public enum Pestana
     General,
     Historial,
     Contratos,
-    Contactos
+    Contactos,
+    Novedades
 }
 
 /// <summary>
@@ -90,6 +91,12 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         IContextoEmpresa contextoEmpresa,
         SesionUsuario sesion,
         IServicioNavegacion navegacion,
+        IServicioReportes reportes,
+        IServicioNovedades novedades,
+        IServicioDocumentos documentos,
+        IServicioCatalogos catalogos,
+        IServicioRespaldos respaldos,
+        IServicioArchivos archivos,
         ILogger<VistaModeloPrincipal> registro,
         IServicioDialogo dialogo)
         : base(registro, dialogo)
@@ -101,10 +108,16 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         _contextoEmpresa = contextoEmpresa;
         _sesion = sesion;
         _navegacion = navegacion;
+        _reportes = reportes;
+        _novedades = novedades;
+        _documentos = documentos;
+        _catalogos = catalogos;
+        _respaldos = respaldos;
+        _archivos = archivos;
 
         // El constructor solo asigna dependencias y valores fijos. Nada de
         // consultas: eso vive en CargarDatosAsync (CLAUDE.md, regla 13).
-        Titulo = "SIGEM";
+        Titulo = "RH Manager";
         EmpresaActiva = string.Empty;
         ColorEmpresa = "#0453CD";
         Usuario = string.Empty;
@@ -121,7 +134,31 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
             new OpcionFiltro((int)EstadoColaborador.Suspendido, "Suspendido"),
             new OpcionFiltro((int)EstadoColaborador.Inactivo, "Inactivo")
         ];
+
+        // Deja los formularios de captura en un estado valido de partida: ningun
+        // campo enlazado en null ni fecha fuera del rango del DatePicker.
+        InicializarCamposEdicion();
+        InicializarCamposNovedad();
+        InicializarCamposDocumento();
+        InicializarCamposCatalogo();
+        InicializarCamposRespaldo();
     }
+
+    // ─── Limites de los campos de fecha ─────────────────────────────────────
+    //
+    // Los tres los consume CampoFecha para acotar lo que se puede escribir y el
+    // rango del desplegable de año. Estan aca y no incrustados en el XAML porque
+    // "hoy" no es una constante y hornearla en la vista la dejaria vencida al dia
+    // siguiente de compilar.
+
+    /// <summary>Primera fecha razonable del sistema.</summary>
+    public DateTime LimiteFechaMinima { get; } = new(1900, 1, 1);
+
+    /// <summary>Hoy. Tope de lo que ya ocurrio: nacimiento, ingreso, un hecho registrado.</summary>
+    public DateTime LimiteFechaHoy => DateTime.Today;
+
+    /// <summary>Tope de lo que esta por ocurrir: vencimientos y vacaciones programadas.</summary>
+    public DateTime LimiteFechaFutura => DateTime.Today.AddYears(30);
 
     // ─── Colecciones ────────────────────────────────────────────────────────
 
@@ -219,6 +256,8 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     [NotifyPropertyChangedFor(nameof(PanelResumen))]
     [NotifyPropertyChangedFor(nameof(PanelColaboradores))]
     [NotifyPropertyChangedFor(nameof(PanelAlertas))]
+    [NotifyPropertyChangedFor(nameof(PanelCatalogos))]
+    [NotifyPropertyChangedFor(nameof(PanelRespaldos))]
     [NotifyPropertyChangedFor(nameof(PanelPendiente))]
     [NotifyPropertyChangedFor(nameof(TituloSeccion))]
     [NotifyPropertyChangedFor(nameof(SubtituloSeccion))]
@@ -243,7 +282,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         Seccion.Historial => "Historial",
         Seccion.Alertas => "Alertas",
         Seccion.Reportes => "Reportes",
-        _ => "Configuracion"
+        _ => "Configuración"
     };
 
     /// <summary>Linea de apoyo bajo el titulo.</summary>
@@ -251,11 +290,11 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     {
         Seccion.Resumen => "Vista consolidada de estado administrativo y alertas operativas.",
         Seccion.Colaboradores => "Expedientes del personal de la empresa activa.",
-        Seccion.Alertas => "Vencimientos y efemerides que exigen atencion.",
+        Seccion.Alertas => "Vencimientos y efemérides que exigen atención.",
         Seccion.Documentos => "Archivo digitalizado del expediente.",
         Seccion.Historial => "Movimientos laborales registrados.",
         Seccion.Reportes => "Constancias, planillas y listados.",
-        _ => "Parametros del sistema."
+        _ => "Catálogos y parámetros de la empresa activa."
     };
 
     // ─── Ficha ──────────────────────────────────────────────────────────────
@@ -265,31 +304,48 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     [NotifyPropertyChangedFor(nameof(PanelResumen))]
     [NotifyPropertyChangedFor(nameof(PanelColaboradores))]
     [NotifyPropertyChangedFor(nameof(PanelAlertas))]
+    [NotifyPropertyChangedFor(nameof(PanelCatalogos))]
+    [NotifyPropertyChangedFor(nameof(PanelRespaldos))]
     [NotifyPropertyChangedFor(nameof(PanelPendiente))]
     [NotifyPropertyChangedFor(nameof(PanelFicha))]
     public partial DetalleColaborador? Ficha { get; set; }
 
-    // Que panel se ve. Uno solo a la vez; la ficha tapa a todos.
-    public bool PanelFicha => Ficha is not null;
-    public bool PanelResumen => Ficha is null && SeccionActiva == Seccion.Resumen;
-    public bool PanelColaboradores => Ficha is null && SeccionActiva == Seccion.Colaboradores;
-    public bool PanelAlertas => Ficha is null && SeccionActiva == Seccion.Alertas;
+    // Que panel se ve. Uno solo a la vez. Los formularios de captura (edicion y
+    // novedad) tapan a todos, incluida la ficha; la ficha, a su vez, tapa a los
+    // demas. Edicion y novedad nunca coexisten: se abren desde la ficha.
+    public bool PanelDocumento => ModoDocumento && !ModoVistaPrevia;
+    public bool PanelNovedad => ModoNovedad && !ModoDocumento && !ModoVistaPrevia;
+    public bool PanelEdicion => ModoEdicion && !ModoNovedad && !ModoDocumento && !ModoVistaPrevia;
+    public bool PanelFicha => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is not null;
+    public bool PanelResumen => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null && SeccionActiva == Seccion.Resumen;
+    public bool PanelColaboradores => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null && SeccionActiva == Seccion.Colaboradores;
+    public bool PanelAlertas => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null && SeccionActiva == Seccion.Alertas;
 
-    public bool PanelPendiente => Ficha is null
-        && SeccionActiva is Seccion.Documentos or Seccion.Historial
-            or Seccion.Reportes or Seccion.Configuracion;
+    /// <summary>Configuración: catálogos (CR-06) o respaldos (CR-12), nunca los dos.</summary>
+    public bool PanelCatalogos => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null
+        && SeccionActiva == Seccion.Configuracion
+        && SubseccionActiva == SubseccionConfiguracion.Catalogos;
+
+    public bool PanelRespaldos => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null
+        && SeccionActiva == Seccion.Configuracion
+        && SubseccionActiva == SubseccionConfiguracion.Respaldos;
+
+    public bool PanelPendiente => !ModoVistaPrevia && !ModoEdicion && !ModoNovedad && !ModoDocumento && Ficha is null
+        && SeccionActiva is Seccion.Documentos or Seccion.Historial or Seccion.Reportes;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EsPestanaGeneral))]
     [NotifyPropertyChangedFor(nameof(EsPestanaHistorial))]
     [NotifyPropertyChangedFor(nameof(EsPestanaContratos))]
     [NotifyPropertyChangedFor(nameof(EsPestanaContactos))]
+    [NotifyPropertyChangedFor(nameof(EsPestanaNovedades))]
     public partial Pestana PestanaActiva { get; set; }
 
     public bool EsPestanaGeneral => PestanaActiva == Pestana.General;
     public bool EsPestanaHistorial => PestanaActiva == Pestana.Historial;
     public bool EsPestanaContratos => PestanaActiva == Pestana.Contratos;
     public bool EsPestanaContactos => PestanaActiva == Pestana.Contactos;
+    public bool EsPestanaNovedades => PestanaActiva == Pestana.Novedades;
 
     /// <summary>Cuantos documentos tiene el expediente abierto.</summary>
     public string ConteoDocumentos => Ficha is null
@@ -314,6 +370,12 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
 
     /// <summary>Verdadero si el expediente abierto no tiene documentos.</summary>
     public bool SinDocumentos => Ficha is not null && Ficha.Documentos.Count == 0;
+
+    /// <summary>Verdadero si el expediente abierto no tiene incidencias.</summary>
+    public bool SinIncidencias => Ficha is not null && Ficha.Incidencias.Count == 0;
+
+    /// <summary>Verdadero si el expediente abierto no tiene vacaciones programadas.</summary>
+    public bool SinVacaciones => Ficha is not null && Ficha.Vacaciones.Count == 0;
 
     // ─── Carga ──────────────────────────────────────────────────────────────
 
@@ -350,9 +412,47 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 await CargarAvisosAsync(cancelacion).ConfigureAwait(true);
                 break;
 
+            case Seccion.Configuracion:
+                // Configuración tiene dos mitades y solo se consulta la abierta.
+                if (SubseccionActiva == SubseccionConfiguracion.Respaldos)
+                {
+                    await CargarRespaldosAsync(cancelacion).ConfigureAwait(true);
+                }
+                else
+                {
+                    await CargarCatalogoAsync(cancelacion).ConfigureAwait(true);
+                }
+
+                break;
+
             default:
                 // Las secciones todavia no construidas no consultan nada.
                 break;
+        }
+
+        // El globo del menu lateral se refresca en toda carga, no solo al abrir
+        // Alertas: si el numero solo se actualizara ahi, el contador mentiría
+        // mientras el usuario trabaja en cualquier otra pantalla (CR-10).
+        await ActualizarContadorAvisosAsync(cancelacion).ConfigureAwait(true);
+    }
+
+    /// <summary>Refresca el globo de avisos del menú lateral. Es un COUNT, nada más.</summary>
+    private async Task ActualizarContadorAvisosAsync(CancellationToken cancelacion)
+    {
+        try
+        {
+            var pendientes = await _alertas.ContarPendientesAsync(cancelacion).ConfigureAwait(true);
+            EnHiloUi(() => AvisosPendientes = pendientes);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Que el contador no se pueda leer no puede tumbar la pantalla que
+            // el usuario acaba de abrir.
+            Registro.LogWarning(ex, "No se pudo actualizar el contador de avisos.");
         }
     }
 
@@ -588,11 +688,11 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         }
         catch (Exception ex)
         {
-            Registro.LogError(ex, "Fallo la busqueda de colaboradores.");
+            Registro.LogError(ex, "Falló la búsqueda de colaboradores.");
 
             await Dialogo.AvisarAsync(
-                "No se pudo completar la busqueda",
-                "SIGEM no logro consultar los colaboradores. El detalle quedo en el archivo de registro.")
+                "No se pudo completar la búsqueda",
+                "RH Manager no logróconsultar los colaboradores. El detalle quedó en el archivo de registro.")
                 .ConfigureAwait(true);
         }
     }
@@ -616,7 +716,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 {
                     await Dialogo.AvisarAsync(
                         "Expediente no disponible",
-                        "Ese colaborador ya no esta disponible en la empresa activa.").ConfigureAwait(true);
+                        "Ese colaborador ya no está disponible en la empresa activa.").ConfigureAwait(true);
                     return;
                 }
 
@@ -629,7 +729,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 });
             },
             "apertura del expediente de " + (fila?.NombreCompleto ?? "desconocido"),
-            "No se pudo abrir el expediente. El detalle quedo en el archivo de registro.");
+            "No se pudo abrir el expediente. El detalle quedó en el archivo de registro.");
 
     /// <summary>Cierra la ficha y vuelve al directorio.</summary>
     [RelayCommand]
@@ -652,6 +752,8 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         OnPropertyChanged(nameof(HayContactoPrincipal));
         OnPropertyChanged(nameof(SinContactoPrincipal));
         OnPropertyChanged(nameof(SinDocumentos));
+        OnPropertyChanged(nameof(SinIncidencias));
+        OnPropertyChanged(nameof(SinVacaciones));
     }
 
     /// <summary>Cambia de pestana dentro de la ficha.</summary>
@@ -674,7 +776,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
             {
                 if (!Enum.TryParse<Seccion>(nombre, ignoreCase: true, out var seccion))
                 {
-                    Registro.LogWarning("Se pidio una seccion desconocida: {Nombre}", nombre ?? "(nula)");
+                    Registro.LogWarning("Se pidió una sección desconocida: {Nombre}", nombre ?? "(nula)");
                     return;
                 }
 
@@ -686,8 +788,8 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
 
                 await CargarSeccionAsync().ConfigureAwait(true);
             },
-            "cambio a la seccion " + (nombre ?? "desconocida"),
-            "No se pudo abrir esa seccion. El detalle quedo en el archivo de registro.");
+            "cambio a la sección " + (nombre ?? "desconocida"),
+            "No se pudo abrir esa sección. El detalle quedó en el archivo de registro.");
 
     /// <summary>Deja los criterios como al abrir la pantalla.</summary>
     [RelayCommand]
@@ -730,7 +832,7 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 await _alertas.ResolverAsync(aviso.Id).ConfigureAwait(true);
                 await CargarAvisosAsync(CancellationToken.None).ConfigureAwait(true);
             },
-            "resolucion del aviso " + (aviso?.Id.ToString() ?? "desconocido"),
+            "resolución del aviso " + (aviso?.Id.ToString() ?? "desconocido"),
             "No se pudo marcar el aviso como atendido.");
 
     // ─── Sesion ─────────────────────────────────────────────────────────────
@@ -750,42 +852,11 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
                 _sesion.Cerrar();
                 _contextoEmpresa.Limpiar();
                 _empresaConMotorCorrido = 0;
-                Registro.LogInformation("Sesion cerrada.");
+                Registro.LogInformation("Sesión cerrada.");
                 await _navegacion.IrAsync(RutasNavegacion.Acceso).ConfigureAwait(true);
             },
-            "cierre de sesion",
-            "No se pudo cerrar la sesion.");
-
-    // ─── Acciones todavia sin etapa ─────────────────────────────────────────
-
-    /// <summary>
-    /// Ningun boton visible se queda mudo (CLAUDE.md, regla 4). Lo que aun no
-    /// esta construido lo dice con su nombre y su etapa, en vez de no hacer nada.
-    /// </summary>
-    [RelayCommand]
-    private Task PendienteAsync(string? funcion)
-        => EjecutarSeguroAsync(
-            () => Dialogo.AvisarAsync(
-                funcion ?? "Funcion pendiente",
-                DescribirPendiente(funcion)),
-            "aviso de funcion pendiente: " + (funcion ?? "sin nombre"),
-            "No se pudo mostrar el aviso.");
-
-    private static string DescribirPendiente(string? funcion) => funcion switch
-    {
-        "Constancia de trabajo" =>
-            "La constancia en PDF con codigo QR verificable se habilita en la etapa de reportes.",
-        "Exportar reporte" or "Exportar ficha" =>
-            "La exportacion a PDF y Excel se habilita en la etapa de reportes.",
-        "Nuevo registro" or "Editar informacion" =>
-            "El alta y la edicion de expedientes se habilitan en la etapa de captura. "
-                + "La demostracion trabaja sobre los datos ya cargados.",
-        "Registrar incidencia" =>
-            "El registro de incidencias y memorandos se habilita en una etapa posterior.",
-        "Programar vacaciones" =>
-            "La programacion de vacaciones se habilita en una etapa posterior.",
-        _ => "Esta funcion se habilita en una etapa posterior de SIGEM."
-    };
+            "cierre de sesión",
+            "No se pudo cerrar la sesión.");
 
     // ─── Auxiliares ─────────────────────────────────────────────────────────
 

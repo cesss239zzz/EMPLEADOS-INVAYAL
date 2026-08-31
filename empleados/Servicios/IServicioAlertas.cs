@@ -37,17 +37,17 @@ public sealed record LineaAviso(
 
     public string PlazoTexto => DiasRestantes switch
     {
-        < 0 => "Vencido hace " + Math.Abs(DiasRestantes) + " dias",
+        < 0 => "Vencido hace " + Math.Abs(DiasRestantes) + " días",
         0 => "Es hoy",
-        1 => "Manana",
-        _ => "En " + DiasRestantes + " dias"
+        1 => "Mañana",
+        _ => "En " + DiasRestantes + " días"
     };
 
     public string TipoTexto => Tipo switch
     {
         TipoAviso.VencimientoContrato => "Contrato",
         TipoAviso.VencimientoDocumento => "Documento",
-        TipoAviso.Cumpleanos => "Cumpleanos",
+        TipoAviso.Cumpleanos => "Cumpleaños",
         TipoAviso.AniversarioLaboral => "Aniversario",
         TipoAviso.FinPeriodoPrueba => "Periodo de prueba",
         _ => "Aviso"
@@ -102,7 +102,7 @@ public sealed record LineaAviso(
             }
 
             var dias = (int)(ahora.Date - generado.Date).TotalDays;
-            return dias <= 7 ? "Hace " + dias + " dias" : generado.ToString("dd/MM/yyyy");
+            return dias <= 7 ? "Hace " + dias + " días" : generado.ToString("dd/MM/yyyy");
         }
     }
 }
@@ -124,6 +124,13 @@ public interface IServicioAlertas
 
     /// <summary>Avisos pendientes, del mas urgente al menos urgente.</summary>
     Task<IReadOnlyList<LineaAviso>> ObtenerPendientesAsync(CancellationToken cancelacion = default);
+
+    /// <summary>
+    /// Cuantos avisos pendientes hay. Es un COUNT, no una lista: lo consume el
+    /// globo del menu lateral, que debe reflejar el numero real aunque el
+    /// usuario nunca abra la pantalla de Alertas (solicitud de cambios, CR-10).
+    /// </summary>
+    Task<int> ContarPendientesAsync(CancellationToken cancelacion = default);
 
     /// <summary>Marca un aviso como resuelto.</summary>
     Task ResolverAsync(int avisoId, CancellationToken cancelacion = default);

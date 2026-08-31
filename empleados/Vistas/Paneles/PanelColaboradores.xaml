@@ -28,12 +28,13 @@
                     StrokeThickness="0"
                     Padding="16,0"
                     HeightRequest="42"
+                    IsVisible="{Binding PuedeCapturar}"
                     VerticalOptions="Center">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="4" />
                 </Border.StrokeShape>
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding PendienteCommand}" CommandParameter="Nuevo registro" />
+                    <TapGestureRecognizer Command="{Binding NuevoColaboradorCommand}" />
                 </Border.GestureRecognizers>
                 <HorizontalStackLayout Spacing="9" VerticalOptions="Center" InputTransparent="True">
                     <Path Data="M10,4 V16 M4,10 H16"
@@ -187,19 +188,19 @@
                                             <Label Text="{Binding NombreCompleto}"
                                                    Style="{StaticResource Cuerpo}"
                                                    LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding Identidad}"
+                                            <Label Text="{Binding IdentidadTexto}"
                                                    Style="{StaticResource DatoSuave}" />
                                         </VerticalStackLayout>
                                     </Grid>
 
-                                    <Label Grid.Column="2" Text="{Binding Puesto}"
+                                    <Label Grid.Column="2" Text="{Binding PuestoTexto}"
                                            Style="{StaticResource CuerpoMenor}"
                                            TextColor="{StaticResource Texto}"
                                            VerticalOptions="Center" LineBreakMode="TailTruncation" />
-                                    <Label Grid.Column="3" Text="{Binding Departamento}"
+                                    <Label Grid.Column="3" Text="{Binding DepartamentoTexto}"
                                            Style="{StaticResource CuerpoMenor}"
                                            VerticalOptions="Center" LineBreakMode="TailTruncation" />
-                                    <Label Grid.Column="4" Text="{Binding Sucursal}"
+                                    <Label Grid.Column="4" Text="{Binding SucursalTexto}"
                                            Style="{StaticResource CuerpoMenor}"
                                            VerticalOptions="Center" LineBreakMode="TailTruncation" />
                                     <Label Grid.Column="5" Text="{Binding FechaIngresoTexto}"
@@ -238,7 +239,7 @@
                     <Label Text="Sin resultados" Style="{StaticResource TituloSeccion}"
                            TextColor="{StaticResource AceroSuave}" />
                     <Label Style="{StaticResource CuerpoSuave}"
-                           Text="Ningun colaborador de esta empresa cumple los criterios de busqueda." />
+                           Text="Ningún colaborador de esta empresa cumple los criterios de búsqueda." />
                 </VerticalStackLayout>
             </Grid>
         </Border>

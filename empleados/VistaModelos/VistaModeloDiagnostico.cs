@@ -16,13 +16,13 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
     private readonly EstadoAplicacion _estado;
     private readonly IServicioDiagnostico _diagnostico;
     private readonly IServicioNavegacion _navegacion;
-    private readonly OpcionesSigem _opciones;
+    private readonly OpcionesRhManager _opciones;
 
     public VistaModeloDiagnostico(
         EstadoAplicacion estado,
         IServicioDiagnostico diagnostico,
         IServicioNavegacion navegacion,
-        OpcionesSigem opciones,
+        OpcionesRhManager opciones,
         ILogger<VistaModeloDiagnostico> registro,
         IServicioDialogo dialogo)
         : base(registro, dialogo)
@@ -37,7 +37,7 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
         Explicacion = string.Empty;
         ComoResolverlo = string.Empty;
         DetalleTecnico = string.Empty;
-        CarpetaRegistros = RutasSigem.CarpetaRegistros;
+        CarpetaRegistros = RutasRhManager.CarpetaRegistros;
         ArchivoConfiguracion = opciones.RutaArchivoConfiguracion;
     }
 
@@ -86,8 +86,8 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
         var resultado = _estado.UltimoDiagnostico;
         if (resultado is null)
         {
-            Encabezado = "Sin informacion de diagnostico";
-            Explicacion = "Todavia no se ha ejecutado la verificacion de infraestructura.";
+            Encabezado = "Sin información de diagnostico";
+            Explicacion = "Todavía no se ha ejecutado la verificación de infraestructura.";
             ComoResolverlo = "Pulse Reintentar para verificarla ahora.";
             DetalleTecnico = string.Empty;
             return;
@@ -115,14 +115,14 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
                 if (resultado.EsCorrecto)
                 {
                     await Dialogo.AvisarAsync(
-                        "Conexion restablecida",
+                        "Conexión restablecida",
                         "La base de datos ya responde. RH Manager va a continuar.").ConfigureAwait(true);
 
                     await _navegacion.IrAsync(RutasNavegacion.Acceso).ConfigureAwait(true);
                 }
             },
-            "reintento de verificacion de infraestructura",
-            "No se pudo repetir la verificacion. El detalle quedo en el archivo de registro.");
+            "reintento de verificación de infraestructura",
+            "No se pudo repetir la verificación. El detalle quedó en el archivo de registro.");
 
     /// <summary>Abre la carpeta de registros en el Explorador de Windows.</summary>
     [RelayCommand]
@@ -130,11 +130,11 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
         => EjecutarSeguroAsync(
             () =>
             {
-                RutasSigem.Asegurar();
+                RutasRhManager.Asegurar();
 
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = RutasSigem.CarpetaRegistros,
+                    FileName = RutasRhManager.CarpetaRegistros,
                     UseShellExecute = true
                 })?.Dispose();
 
@@ -151,12 +151,12 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
             {
                 var texto = Encabezado + Environment.NewLine
                     + Explicacion + Environment.NewLine + Environment.NewLine
-                    + "Configuracion: " + ArchivoConfiguracion + Environment.NewLine
+                    + "Configuración: " + ArchivoConfiguracion + Environment.NewLine
                     + "Registros: " + CarpetaRegistros + Environment.NewLine + Environment.NewLine
                     + DetalleTecnico;
 
                 await Clipboard.Default.SetTextAsync(texto).ConfigureAwait(true);
-                await Dialogo.AvisarAsync("Copiado", "El detalle tecnico quedo en el portapapeles.")
+                await Dialogo.AvisarAsync("Copiado", "El detalle tecnico quedó en el portapapeles.")
                     .ConfigureAwait(true);
             },
             "copia del detalle tecnico",
@@ -174,10 +174,10 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
     private Task ProvocarErrorControladoAsync()
         => EjecutarSeguroAsync(
             () => throw new InvalidOperationException(
-                "Error de prueba lanzado a proposito desde la pantalla de diagnostico."),
+                "Error de prueba lanzado a propósito desde la pantalla de diagnostico."),
             "prueba de error controlado",
-            "Este es el mensaje que veria el usuario ante un fallo. La aplicacion sigue funcionando "
-                + "y el detalle quedo en el archivo de registro.");
+            "Este es el mensaje que veria el usuario ante un fallo. La aplicación sigue funcionando "
+                + "y el detalle quedó en el archivo de registro.");
 
     /// <summary>
     /// Prueba de aceptacion de E1: una excepcion que nadie captura, lanzada en el hilo
@@ -187,10 +187,10 @@ public sealed partial class VistaModeloDiagnostico : VistaModeloBase
     [RelayCommand]
     private void ProvocarErrorNoControlado()
     {
-        Registro.LogWarning("Se va a lanzar una excepcion no controlada a proposito.");
+        Registro.LogWarning("Se va a lanzar una excepción no controlada a propósito.");
 
         MainThread.BeginInvokeOnMainThread(static () =>
             throw new ApplicationException(
-                "Excepcion no controlada lanzada a proposito para probar el enganche global."));
+                "Excepción no controlada lanzada a propósito para probar el enganche global."));
     }
 }

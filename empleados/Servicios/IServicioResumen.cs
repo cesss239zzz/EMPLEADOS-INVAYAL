@@ -31,7 +31,7 @@ public sealed record ResumenGeneral(
     /// <summary>Pie de la tarjeta de cumpleanos.</summary>
     public string DetalleCumpleanos => string.IsNullOrEmpty(ProximoCumpleanos)
         ? "Ninguno pendiente este mes"
-        : "Proximo: " + ProximoCumpleanos;
+        : "Próximo: " + ProximoCumpleanos;
 
     /// <summary>Verdadero cuando la tarjeta de documentos debe encenderse en ambar.</summary>
     public bool HayDocumentosPorVencer => DocumentosPorVencer > 0;
@@ -41,11 +41,11 @@ public sealed record ResumenGeneral(
 
     /// <summary>Pie de la tarjeta de contratos.</summary>
     public string DetalleContratos => HayContratosPorVencer
-        ? "Requiere accion inmediata"
-        : "Sin vencimientos proximos";
+        ? "Requiere acción inmediata"
+        : "Sin vencimientos próximos";
 
     /// <summary>Pie de la tarjeta de documentos.</summary>
-    public string DetalleDocumentos => "(Proximos " + DiasDeVentana + " dias)";
+    public string DetalleDocumentos => "(Próximos " + DiasDeVentana + " días)";
 
     /// <summary>Resumen vacio, para la pantalla antes de la primera consulta.</summary>
     public static ResumenGeneral Vacio { get; } = new(0, 0, 0, string.Empty, 0, 0);

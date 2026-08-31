@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-    Contenedor de SIGEM: menu lateral fijo a la izquierda, barra superior con el
+    Contenedor de RH Manager: menu lateral fijo a la izquierda, barra superior con el
     buscador y area de contenido. Sigue la maqueta "Dashboard Administrativo":
     menu de 248px sobre azul casi negro, cabecera blanca de 64px y lienzo gris.
 
@@ -15,7 +15,7 @@
              x:DataType="vm:VistaModeloPrincipal"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource Papel}"
-             Title="SIGEM">
+             Title="RH Manager">
 
     <Grid ColumnDefinitions="248,*">
 
@@ -266,7 +266,7 @@
                               StrokeThickness="1.6"
                               WidthRequest="20" HeightRequest="20"
                               VerticalOptions="Center" />
-                        <Label Grid.Column="1" Text="Configuracion"
+                        <Label Grid.Column="1" Text="Configuración"
                                FontFamily="{StaticResource FuenteTexto}"
                                FontSize="14"
                                TextColor="{Binding EsConfiguracion, Converter={StaticResource TextoMenu}}"
@@ -306,7 +306,7 @@
                               StrokeThickness="1.6"
                               WidthRequest="20" HeightRequest="20"
                               VerticalOptions="Center" />
-                        <Label Grid.Column="1" Text="Cerrar sesion"
+                        <Label Grid.Column="1" Text="Cerrar sesión"
                                FontFamily="{StaticResource FuenteTexto}"
                                FontSize="14"
                                TextColor="#E88B86"
@@ -328,7 +328,7 @@
 
                 <!-- Marca y empresa activa -->
                 <HorizontalStackLayout Grid.Column="0" Spacing="10" VerticalOptions="Center">
-                    <Label Text="SIGEM"
+                    <Label Text="RH Manager"
                            FontFamily="{StaticResource FuenteTitular}"
                            FontSize="20"
                            FontAttributes="Bold"
@@ -458,7 +458,13 @@
                 <p:PanelColaboradores IsVisible="{Binding PanelColaboradores}" />
                 <p:PanelAlertas IsVisible="{Binding PanelAlertas}" />
                 <p:PanelFicha IsVisible="{Binding PanelFicha}" />
+                <p:PanelCatalogos IsVisible="{Binding PanelCatalogos}" />
+                <p:PanelRespaldos IsVisible="{Binding PanelRespaldos}" />
                 <p:PanelPendiente IsVisible="{Binding PanelPendiente}" />
+                <p:PanelEdicion IsVisible="{Binding PanelEdicion}" />
+                <p:PanelNovedad IsVisible="{Binding PanelNovedad}" />
+                <p:PanelDocumento IsVisible="{Binding PanelDocumento}" />
+                <p:PanelVistaPrevia IsVisible="{Binding PanelVistaPrevia}" />
 
                 <ActivityIndicator IsRunning="{Binding EstaOcupado}"
                                    IsVisible="{Binding EstaOcupado}"

@@ -91,11 +91,18 @@ public class Departamento : EntidadEmpresa
     public bool Activo { get; set; } = true;
 }
 
-/// <summary>Puesto de trabajo. Pertenece a un departamento.</summary>
+/// <summary>
+/// Puesto de trabajo. El departamento es opcional: se puede tener un puesto
+/// suelto —limpieza, mantenimiento— sin obligar a inventarle un departamento
+/// (solicitud de cambios, CR-05 y CR-06).
+/// </summary>
 public class Puesto : EntidadEmpresa
 {
     public string Nombre { get; set; } = string.Empty;
-    public int DepartamentoId { get; set; }
+
+    /// <summary>Departamento al que pertenece, o nulo si el puesto no cuelga de ninguno.</summary>
+    public int? DepartamentoId { get; set; }
+
     public Departamento? Departamento { get; set; }
     public bool Activo { get; set; } = true;
 }
@@ -116,11 +123,58 @@ public class TipoDocumento : EntidadEmpresa
 {
     public string Nombre { get; set; } = string.Empty;
 
-    /// <summary>Si vence, el motor de alertas vigila su fecha de vencimiento.</summary>
+    /// <summary>
+    /// Si vence, el motor de alertas vigila su fecha de vencimiento. Si no,
+    /// el campo de vencimiento se deshabilita al capturar el documento
+    /// (solicitud de cambios, CR-10).
+    /// </summary>
     public bool RequiereVencimiento { get; set; }
 
-    /// <summary>Dias de anticipacion con que se avisa antes del vencimiento.</summary>
+    /// <summary>
+    /// Vigencia del documento en meses. A partir de la fecha de emision el
+    /// sistema propone el vencimiento; el usuario siempre puede corregirlo.
+    /// Nula cuando el tipo no vence o cuando la vigencia no es fija.
+    ///
+    /// Se guarda en meses aunque la pantalla deje elegir "meses" o "años":
+    /// un año son doce meses y guardar dos unidades distintas solo invita a
+    /// que se desincronicen.
+    /// </summary>
+    public int? MesesVigencia { get; set; }
+
+    /// <summary>
+    /// Dias de anticipacion del primer aviso. Es tambien la ventana con la que
+    /// el documento empieza a aparecer como "por vencer".
+    /// </summary>
     public int DiasAvisoAnticipado { get; set; } = 30;
 
+    /// <summary>
+    /// Recordatorios sucesivos, en dias antes del vencimiento y separados por
+    /// coma: "30,15,5" avisa tres veces, cada vez mas cerca. Configurable por
+    /// tipo de documento, nunca fijo en el codigo (solicitud de cambios, CR-10).
+    ///
+    /// Se guarda como texto y no como tabla aparte porque son dos o tres numeros
+    /// que se leen y se escriben siempre juntos: una tabla hija seria mas
+    /// maquinaria de la que el problema pide.
+    /// </summary>
+    public string EscalaAviso { get; set; } = "30,15,5";
+
     public bool Activo { get; set; } = true;
+
+    /// <summary>
+    /// Los dias de la escala, ya ordenados de mayor a menor y sin repetidos.
+    /// Si la escala esta vacia o mal escrita, cae en <see cref="DiasAvisoAnticipado"/>,
+    /// que siempre tiene un valor razonable.
+    /// </summary>
+    public IReadOnlyList<int> DiasDeAviso()
+    {
+        var dias = (EscalaAviso ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(t => int.TryParse(t, out var d) ? d : 0)
+            .Where(d => d > 0)
+            .Distinct()
+            .OrderByDescending(d => d)
+            .ToList();
+
+        return dias.Count > 0 ? dias : [Math.Max(DiasAvisoAnticipado, 1)];
+    }
 }

@@ -39,3 +39,7 @@ logs/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Carpeta de entrega: 303 MB de binarios autocontenidos. Se regenera con
+# dotnet publish, no tiene por que viajar en el repositorio.
+publicado/

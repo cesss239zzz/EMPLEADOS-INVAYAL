@@ -10,17 +10,17 @@ namespace empleados.Datos;
 /// MauiProgram. Existe porque las herramientas de EF no pueden arrancar una
 /// aplicacion MAUI para pedirle su contenedor de dependencias.
 /// </summary>
-public sealed class FabricaContextoDiseno : IDesignTimeDbContextFactory<ContextoSigem>
+public sealed class FabricaContextoDiseno : IDesignTimeDbContextFactory<ContextoRhManager>
 {
-    public ContextoSigem CreateDbContext(string[] argumentos)
+    public ContextoRhManager CreateDbContext(string[] argumentos)
     {
-        var opciones = new DbContextOptionsBuilder<ContextoSigem>()
-            .UseSqlite(RutasSigem.CadenaConexionPorOmision)
+        var opciones = new DbContextOptionsBuilder<ContextoRhManager>()
+            .UseSqlite(RutasRhManager.CadenaConexionPorOmision)
             .Options;
 
         // En diseño no hay sesion, asi que no hay empresa activa. El filtro
         // global queda en 0 y no devuelve filas, cosa que a la generacion de
         // migraciones le da igual: solo le interesa la forma del modelo.
-        return new ContextoSigem(opciones, new ContextoEmpresa());
+        return new ContextoRhManager(opciones, new ContextoEmpresa());
     }
 }

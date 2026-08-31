@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    Formulario para adjuntar un documento digitalizado al expediente. El archivo
+    se elige con el selector del sistema; aca solo se enlazan los campos al
+    ViewModel, que copia el archivo y registra el documento.
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:empleados.VistaModelos"
+             xmlns:c="clr-namespace:empleados.Vistas.Controles"
+             x:Class="empleados.Vistas.Paneles.PanelDocumento"
+             x:DataType="vm:VistaModeloPrincipal"
+             BackgroundColor="{StaticResource Papel}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ═══ CABECERA ═══ -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Padding="32,22,32,16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                <Label Text="Adjuntar documento" Style="{StaticResource TituloPantalla}" />
+                <Label Text="{Binding SubtituloDocumento}" Style="{StaticResource CuerpoSuave}" />
+            </VerticalStackLayout>
+
+            <Button Grid.Column="1"
+                    Text="Cancelar"
+                    Style="{StaticResource BotonSecundario}"
+                    Command="{Binding CancelarDocumentoCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+
+            <Button Grid.Column="2"
+                    Text="Guardar documento"
+                    Style="{StaticResource BotonPrimario}"
+                    Command="{Binding GuardarDocumentoCommand}"
+                    IsEnabled="{Binding NoEstaOcupado}"
+                    VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ═══ CAMPOS ═══ -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="32,0,32,32" Spacing="18">
+
+                <Border BackgroundColor="{StaticResource SelloTenue}"
+                        Stroke="#F2C7C1"
+                        StrokeThickness="1"
+                        Padding="16,12"
+                        IsVisible="{Binding HayErrorDocumento}"
+                        StrokeShape="RoundRectangle 4,4,4,4">
+                    <Label Text="{Binding ErrorDocumento}"
+                           Style="{StaticResource Cuerpo}"
+                           TextColor="{StaticResource Sello}" />
+                </Border>
+
+                <Border Style="{StaticResource Tarjeta}" StrokeShape="RoundRectangle 6,6,6,6" Padding="26,22">
+                    <VerticalStackLayout Spacing="18">
+                        <Label Text="Datos del documento" Style="{StaticResource TituloSeccion}" />
+                        <BoxView Color="{StaticResource Linea}" HeightRequest="1" />
+
+                        <!-- Archivo -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Archivo" Style="{StaticResource EtiquetaCampo}" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Button Grid.Column="0"
+                                        Text="Elegir archivo"
+                                        Style="{StaticResource BotonSecundario}"
+                                        Command="{Binding ElegirArchivoCommand}"
+                                        IsEnabled="{Binding NoEstaOcupado}" />
+                                <Border Grid.Column="1"
+                                        BackgroundColor="{StaticResource SuperficieSuave}"
+                                        Stroke="{StaticResource Linea}" StrokeThickness="1"
+                                        Padding="12,10" VerticalOptions="Center"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Label Text="{Binding ArchivoElegidoNombre}"
+                                           Style="{StaticResource ValorFicha}"
+                                           LineBreakMode="MiddleTruncation" />
+                                </Border>
+                            </Grid>
+                            <Label Text="{Binding LimitesDocumentoTexto}"
+                                   Style="{StaticResource CuerpoSuave}" FontSize="11" />
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="16"
+                              RowDefinitions="Auto,Auto">
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                <Label Text="Tipo de documento" Style="{StaticResource EtiquetaCampo}" />
+                                <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                        BackgroundColor="{StaticResource Superficie}" Padding="8,0"
+                                        StrokeShape="RoundRectangle 4,4,4,4">
+                                    <Picker ItemsSource="{Binding TiposDocumentoDoc}"
+                                            ItemDisplayBinding="{Binding Nombre}"
+                                            SelectedItem="{Binding TipoDocumentoSeleccionado}"
+                                            Title="Seleccione un tipo"
+                                            FontSize="14" TextColor="{StaticResource Texto}"
+                                            BackgroundColor="Transparent" HeightRequest="40" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                <Label Text="Fecha de emisión" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaEmisionDocumento}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaHoy}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <!-- Ya no hay interruptor: si el documento vence lo
+                                 decide su TIPO en el catálogo, no el usuario (CR-10). -->
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6"
+                                                 IsVisible="{Binding DocumentoVence}">
+                                <Label Text="Fecha de vencimiento" Style="{StaticResource EtiquetaCampo}" />
+                                <c:CampoFecha Fecha="{Binding FechaVencimientoDocumento}"
+                                              FechaMinima="{Binding LimiteFechaMinima}"
+                                              FechaMaxima="{Binding LimiteFechaFutura}"
+                                              PermiteVacio="False" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6"
+                                                 VerticalOptions="End">
+                                <Label Text="{Binding AyudaVencimiento}"
+                                       Style="{StaticResource CuerpoSuave}" FontSize="11" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Descripción (opcional)" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Stroke="{StaticResource LineaFuerte}" StrokeThickness="1"
+                                    BackgroundColor="{StaticResource Superficie}" Padding="0"
+                                    StrokeShape="RoundRectangle 4,4,4,4">
+                                <Entry Text="{Binding DescripcionDocumento}"
+                                       Style="{StaticResource Campo}"
+                                       Placeholder="Nota sobre este documento" Margin="6,0" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentView>

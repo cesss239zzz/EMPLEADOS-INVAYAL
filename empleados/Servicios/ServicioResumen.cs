@@ -9,12 +9,12 @@ namespace empleados.Servicios;
 /// <inheritdoc />
 public sealed class ServicioResumen : IServicioResumen
 {
-    private readonly IDbContextFactory<ContextoSigem> _fabrica;
+    private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly IContextoEmpresa _contextoEmpresa;
     private readonly ILogger<ServicioResumen> _registro;
 
     public ServicioResumen(
-        IDbContextFactory<ContextoSigem> fabrica,
+        IDbContextFactory<ContextoRhManager> fabrica,
         IContextoEmpresa contextoEmpresa,
         ILogger<ServicioResumen> registro)
     {
@@ -45,7 +45,9 @@ public sealed class ServicioResumen : IServicioResumen
         // traer las fechas de nacimiento para filtrarlas aca.
         var cumpleanos = await contexto.Colaboradores
             .CountAsync(
-                c => c.Estado == EstadoColaborador.Activo && c.FechaNacimiento.Month == hoy.Month,
+                c => c.Estado == EstadoColaborador.Activo
+                    && c.FechaNacimiento != null
+                    && c.FechaNacimiento.Value.Month == hoy.Month,
                 cancelacion)
             .ConfigureAwait(false);
 
@@ -69,8 +71,8 @@ public sealed class ServicioResumen : IServicioResumen
         var proximo = await CalcularProximoCumpleanosAsync(contexto, hoy, cancelacion).ConfigureAwait(false);
 
         _registro.LogInformation(
-            "Resumen de {Empresa}: {Activos} activos, {Cumpleanos} cumpleanos del mes, "
-                + "{Documentos} documentos y {Contratos} contratos por vencer en {Dias} dias.",
+            "Resumen de {Empresa}: {Activos} activos, {Cumpleanos} cumpleaños del mes, "
+                + "{Documentos} documentos y {Contratos} contratos por vencer en {Dias} días.",
             _contextoEmpresa.NombreEmpresaActiva, activos, cumpleanos, documentos, contratos,
             ResumenGeneral.DiasDeVentana);
 
@@ -82,14 +84,15 @@ public sealed class ServicioResumen : IServicioResumen
     /// sola fila con FirstOrDefault: el orden y el recorte los hace la base.
     /// </summary>
     private static async Task<string> CalcularProximoCumpleanosAsync(
-        ContextoSigem contexto, DateTime hoy, CancellationToken cancelacion)
+        ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
         var siguiente = await contexto.Colaboradores
             .Where(c => c.Estado == EstadoColaborador.Activo
-                && c.FechaNacimiento.Month == hoy.Month
-                && c.FechaNacimiento.Day >= hoy.Day)
-            .OrderBy(c => c.FechaNacimiento.Day)
-            .Select(c => new { Dia = c.FechaNacimiento.Day, c.PrimerNombre })
+                && c.FechaNacimiento != null
+                && c.FechaNacimiento.Value.Month == hoy.Month
+                && c.FechaNacimiento.Value.Day >= hoy.Day)
+            .OrderBy(c => c.FechaNacimiento!.Value.Day)
+            .Select(c => new { Dia = c.FechaNacimiento!.Value.Day, c.PrimerNombre })
             .FirstOrDefaultAsync(cancelacion)
             .ConfigureAwait(false);
 
