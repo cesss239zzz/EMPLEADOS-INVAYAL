@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using empleados.Datos;
 
@@ -10,9 +11,11 @@ using empleados.Datos;
 namespace empleados.Datos.Migraciones
 {
     [DbContext(typeof(ContextoRhManager))]
-    partial class ContextoRhManagerModelSnapshot : ModelSnapshot
+    [Migration("20260831180000_CorrigeContrasenaInicial")]
+    partial class CorrigeContrasenaInicial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.19");

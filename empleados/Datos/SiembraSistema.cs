@@ -29,9 +29,18 @@ internal static class SiembraSistema
     /// Hash BCrypt factor 11 de la contrasena del usuario inicial.
     /// La contrasena en claro NUNCA aparece en el codigo ni en la migracion
     /// (CLAUDE.md, regla 12). El usuario debe cambiarla al primer acceso.
+    ///
+    /// El hash que sembro la migracion inicial no correspondia a la contrasena
+    /// que se le entrego al cliente. Se genero un hash y la clave en claro no
+    /// quedo anotada en ninguna parte, asi que "cregalado" no podia entrar en
+    /// ninguna maquina: BCrypt.Verify devolvia falso siempre y, tras cinco
+    /// intentos, la cuenta se bloqueaba quince minutos.
+    ///
+    /// Lo corrige la migracion CorrigeContrasenaInicial, que ademas arregla las
+    /// bases que ya estan creadas.
     /// </summary>
     private const string HashContrasenaInicial =
-        "$2a$11$20vcf0UgN2TSI.LfZxBKZuZf3o6dRwumzQivpJPvjuBcku2hQMPpO";
+        "$2a$11$GpgRg/FpTrjEdGCSqifH7ekvwN5VZJtyz..1bYZdLrpEhwb22F8ri";
 
     public static void Aplicar(ModelBuilder constructor)
     {
