@@ -1,4 +1,5 @@
 using System.Globalization;
+using empleados.Vistas.Efectos;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace empleados.Vistas.Controles;
@@ -156,6 +157,8 @@ public sealed class CampoFecha : ContentView
         // es exactamente lo que pide CR-03.
         _botonCalendario.Clicked += AlPulsarIcono;
 
+        ConRealce(_botonCalendario, Paleta.AzulTenue);
+
         var filaEntrada = new Grid
         {
             ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }
@@ -273,7 +276,24 @@ public sealed class CampoFecha : ContentView
         _entrada.SetBinding(Entry.PlaceholderProperty, new Binding(nameof(Marcador), source: this));
     }
 
-    private static Button BotonNavegacion(string texto) => new()
+    /// <summary>
+    /// Enciende el realce de puntero en un boton del calendario. Solo color, sin
+    /// levantarlo: son botones chicos y en rejilla, y moverlos seria puro ruido.
+    /// </summary>
+    private static Button ConRealce(Button boton, Color? colorEncima = null)
+    {
+        RealcePuntero.SetActivo(boton, true);
+        RealcePuntero.SetElevacion(boton, 0);
+
+        if (colorEncima is not null)
+        {
+            RealcePuntero.SetColorEncima(boton, colorEncima);
+        }
+
+        return boton;
+    }
+
+    private static Button BotonNavegacion(string texto) => ConRealce(new()
     {
         Text = texto,
         FontSize = 17,
@@ -282,9 +302,9 @@ public sealed class CampoFecha : ContentView
         Padding = 0,
         BackgroundColor = Colors.Transparent,
         TextColor = Paleta.Acero
-    };
+    }, Paleta.AzulTenue);
 
-    private static Button BotonPie(string texto) => new()
+    private static Button BotonPie(string texto) => ConRealce(new()
     {
         Text = texto,
         FontSize = 12,
@@ -292,7 +312,7 @@ public sealed class CampoFecha : ContentView
         Padding = new Thickness(10, 0),
         BackgroundColor = Colors.Transparent,
         TextColor = Paleta.Accion
-    };
+    }, Paleta.AzulTenue);
 
     // ─── Enmascarado del texto ──────────────────────────────────────────────
 
@@ -620,6 +640,10 @@ public sealed class CampoFecha : ContentView
                     : esElegida ? Colors.White
                     : Paleta.Texto
             };
+
+            // El dia elegido ya esta en azul: ese realce lo calcula solo el efecto
+            // aclarando su propio fondo. Los demas se tiñen de azul tenue.
+            ConRealce(boton, esElegida ? null : Paleta.AzulTenue);
 
             // La fecha se captura afuera del cierre para no depender de la
             // variable del bucle.
