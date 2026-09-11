@@ -43,3 +43,10 @@ desktop.ini
 # Carpeta de entrega: 303 MB de binarios autocontenidos. Se regenera con
 # dotnet publish, no tiene por que viajar en el repositorio.
 publicado/
+
+## Bases SQLite. La base vive en %LOCALAPPDATA%\RH Manager y se crea sola en el
+## primer arranque; ninguna copia tiene por que entrar al repositorio. Ademas
+## llevaria expedientes reales de la maquina donde se genero.
+*.db
+*.db-wal
+*.db-shm

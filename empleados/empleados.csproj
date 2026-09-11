@@ -19,6 +19,24 @@
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 		<SelfContained>true</SelfContained>
 
+		<!-- ReadyToRun APAGADO a proposito. MAUI lo enciende solo al publicar en
+		     Release, y eso recompila 79 ensamblados: el publicado deja de traer
+		     las dll originales de NuGet y pasa a traer binarios nuevos, unicos,
+		     que ninguna otra maquina del mundo ha visto nunca.
+
+		     Como la aplicacion no esta firmada, el Control de aplicaciones de
+		     Windows (Smart App Control, encendido por omision en Windows 11
+		     nuevo) los rechaza por falta de reputacion. Se veia asi: la app
+		     abria desde bin pero al pulsar Entrar desde publish lanzaba
+		     FileLoadException sobre BCrypt.Net-Next.dll (0x800711C7) y el
+		     acceso moria con "No se pudo verificar el acceso".
+
+		     Apagado, el publicado copia las mismas dll que bin, ya conocidas.
+		     Se paga algo de arranque; se gana que la aplicacion corra en la
+		     maquina del cliente. Volver a encenderlo exige firmar los binarios
+		     con un certificado de firma de codigo. -->
+		<PublishReadyToRun>false</PublishReadyToRun>
+
 		<!-- Identidad visible -->
 		<ApplicationTitle>RH Manager</ApplicationTitle>
 		<ApplicationId>hn.invayal.rhmanager</ApplicationId>

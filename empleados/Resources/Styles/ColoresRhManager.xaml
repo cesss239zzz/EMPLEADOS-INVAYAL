@@ -12,7 +12,8 @@
     cambia son los valores. Las claves nuevas se agregan al final de cada bloque.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:ef="clr-namespace:empleados.Vistas.Efectos">
 
     <!-- ═══ PALETA ═══ -->
 
@@ -20,6 +21,9 @@
     <Color x:Key="Tinta">#0A2540</Color>
     <Color x:Key="Tinta2">#000F22</Color>
     <Color x:Key="Tinta3">#16304C</Color>
+
+    <!-- Un paso mas clara que Tinta3: realza lo pulsable sobre el fondo oscuro. -->
+    <Color x:Key="Tinta4">#22456B</Color>
 
     <!-- Lienzo y superficies. -->
     <Color x:Key="Papel">#F8F9FB</Color>
@@ -169,6 +173,10 @@
         <Setter Property="Padding" Value="18,10" />
         <Setter Property="MinimumHeightRequest" Value="40" />
         <Setter Property="BorderWidth" Value="0" />
+
+        <!-- Al pasar el puntero el azul se aclara al de accion alta y sube 2 px. -->
+        <Setter Property="ef:RealcePuntero.Activo" Value="True" />
+        <Setter Property="ef:RealcePuntero.ColorEncima" Value="{StaticResource AccionAlta}" />
     </Style>
 
     <Style x:Key="BotonSecundario" TargetType="Button">
@@ -181,6 +189,10 @@
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Padding" Value="16,9" />
         <Setter Property="MinimumHeightRequest" Value="40" />
+
+        <!-- El blanco se vuelve azul claro y el boton sube 2 px. -->
+        <Setter Property="ef:RealcePuntero.Activo" Value="True" />
+        <Setter Property="ef:RealcePuntero.ColorEncima" Value="{StaticResource AzulClaro}" />
     </Style>
 
     <!-- Boton del menu lateral. El resalte activo lo pone la pildora de detras. -->
@@ -194,6 +206,12 @@
         <Setter Property="Padding" Value="0" />
         <Setter Property="HeightRequest" Value="44" />
         <Setter Property="HorizontalOptions" Value="Fill" />
+
+        <!-- Sobre el fondo oscuro el realce es una tinta mas clara. La fila no se
+             levanta: ocupa todo el ancho del menu y moverla se notaria de mas. -->
+        <Setter Property="ef:RealcePuntero.Activo" Value="True" />
+        <Setter Property="ef:RealcePuntero.ColorEncima" Value="{StaticResource Tinta3}" />
+        <Setter Property="ef:RealcePuntero.Elevacion" Value="0" />
     </Style>
 
     <!-- Boton sin marco, para acciones dentro de una tarjeta. -->
@@ -207,6 +225,12 @@
         <Setter Property="BorderWidth" Value="0" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="MinimumHeightRequest" Value="30" />
+
+        <!-- Sin fondo propio: el realce lo pone el azul claro. Sube 1 px porque
+             vive dentro de una tarjeta y un salto mayor la desalinearia. -->
+        <Setter Property="ef:RealcePuntero.Activo" Value="True" />
+        <Setter Property="ef:RealcePuntero.ColorEncima" Value="{StaticResource AzulClaro}" />
+        <Setter Property="ef:RealcePuntero.Elevacion" Value="1" />
     </Style>
 
     <!-- Boton de las acciones rapidas: fondo azul sobre la tarjeta oscura. -->
@@ -220,6 +244,10 @@
         <Setter Property="Padding" Value="14,10" />
         <Setter Property="MinimumHeightRequest" Value="42" />
         <Setter Property="HorizontalOptions" Value="Fill" />
+
+        <!-- Sobre la tarjeta oscura el realce es la tinta clara. -->
+        <Setter Property="ef:RealcePuntero.Activo" Value="True" />
+        <Setter Property="ef:RealcePuntero.ColorEncima" Value="{StaticResource Tinta4}" />
     </Style>
 
     <Style x:Key="Campo" TargetType="Entry">
