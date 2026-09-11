@@ -1,6 +1,7 @@
 using System.Globalization;
 using empleados.Configuracion;
 using empleados.Datos;
+using empleados.Datos.Entidades;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,13 +16,16 @@ public sealed class ServicioRespaldos : IServicioRespaldos
 
     private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly ILogger<ServicioRespaldos> _registro;
+    private readonly SesionUsuario _sesion;
 
     public ServicioRespaldos(
         IDbContextFactory<ContextoRhManager> fabrica,
-        ILogger<ServicioRespaldos> registro)
+        ILogger<ServicioRespaldos> registro,
+        SesionUsuario sesion)
     {
         _fabrica = fabrica;
         _registro = registro;
+        _sesion = sesion;
     }
 
     /// <inheritdoc />
@@ -34,6 +38,10 @@ public sealed class ServicioRespaldos : IServicioRespaldos
     public async Task<ResultadoRespaldo> RespaldarAsync(
         MotivoRespaldo motivo, CancellationToken cancelacion = default)
     {
+        // La copia diaria ocurre antes del acceso; las copias manuales contienen
+        // TODAS las empresas y se reservan al SuperAdministrador.
+        if (motivo != MotivoRespaldo.Diario && (!_sesion.EstaAutenticado || _sesion.Perfil != PerfilUsuario.SuperAdministrador))
+            return ResultadoRespaldo.Falla("Solo el SuperAdministrador puede gestionar respaldos completos.");
         try
         {
             Directory.CreateDirectory(Carpeta);
@@ -137,6 +145,9 @@ public sealed class ServicioRespaldos : IServicioRespaldos
     public async Task<ResultadoGuardado> RestaurarAsync(
         string archivoRespaldo, CancellationToken cancelacion = default)
     {
+        if (!_sesion.EstaAutenticado || _sesion.Perfil != PerfilUsuario.SuperAdministrador)
+            return ResultadoGuardado.Falla("Solo el SuperAdministrador puede restaurar todas las empresas.");
+
         if (string.IsNullOrWhiteSpace(archivoRespaldo) || !File.Exists(archivoRespaldo))
         {
             return ResultadoGuardado.Falla("El archivo de respaldo ya no existe.");
@@ -163,30 +174,29 @@ public sealed class ServicioRespaldos : IServicioRespaldos
                 + (previo.Error ?? string.Empty));
         }
 
-        var destino = RutasRhManager.ArchivoBaseDatos;
-
         try
         {
-            // Sin esto, el grupo de conexiones de SQLite conserva descriptores
-            // abiertos sobre el archivo y Windows no deja reemplazarlo.
-            SqliteConnection.ClearAllPools();
-
+            await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
+            await contexto.Database.OpenConnectionAsync(cancelacion).ConfigureAwait(false);
+            var destino = (SqliteConnection)contexto.Database.GetDbConnection();
+            var origenOpciones = new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.GetFullPath(archivoRespaldo), Mode = SqliteOpenMode.ReadOnly, Pooling = false
+            };
+            // El motor sustituye el contenido de la base configurada, respetando
+            // sus bloqueos y diario. No se copia un .db abierto ni se borran WAL.
             await Task.Run(() =>
             {
-                File.Copy(archivoRespaldo, destino, overwrite: true);
-
-                // Los diarios del estado anterior ya no corresponden a esta base:
-                // dejarlos haria que SQLite reaplique escrituras de otro archivo.
-                BorrarSiExiste(destino + "-wal");
-                BorrarSiExiste(destino + "-shm");
+                using var origen = new SqliteConnection(origenOpciones.ToString());
+                origen.Open();
+                origen.BackupDatabase(destino);
             }, cancelacion).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _registro.LogError(ex, "Fallo la restauración desde {Archivo}.", archivoRespaldo);
             return ResultadoGuardado.Falla(
-                "No se pudo reemplazar la base. Su información quedó intacta y el respaldo "
-                + "previo está en " + previo.Archivo);
+                "No se pudo completar la restauración. Conserve el respaldo previo: " + previo.Archivo);
         }
 
         _registro.LogWarning(
@@ -207,7 +217,8 @@ public sealed class ServicioRespaldos : IServicioRespaldos
             var constructor = new SqliteConnectionStringBuilder
             {
                 DataSource = archivo,
-                Mode = SqliteOpenMode.ReadOnly
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false
             };
 
             await using var conexion = new SqliteConnection(constructor.ToString());
@@ -215,19 +226,35 @@ public sealed class ServicioRespaldos : IServicioRespaldos
 
             await using var orden = conexion.CreateCommand();
 
-            // La tabla de usuarios es la unica que nunca puede faltar: sin ella
-            // no habria forma de entrar al sistema restaurado.
-            orden.CommandText =
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'usuario'";
-
-            var tablas = Convert.ToInt64(
-                await orden.ExecuteScalarAsync(cancelacion).ConfigureAwait(false) ?? 0L,
-                CultureInfo.InvariantCulture);
-
-            if (tablas == 0)
+            orden.CommandText = "PRAGMA integrity_check";
+            var integridad = Convert.ToString(await orden.ExecuteScalarAsync(cancelacion).ConfigureAwait(false));
+            if (!string.Equals(integridad, "ok", StringComparison.OrdinalIgnoreCase))
+                return "El respaldo no supera la comprobación de integridad. No se restauró nada.";
+            orden.CommandText = "PRAGMA foreign_key_check";
+            await using (var lector = await orden.ExecuteReaderAsync(cancelacion).ConfigureAwait(false))
             {
-                return "Ese archivo no es un respaldo de RH Manager: no contiene sus tablas.";
+                if (await lector.ReadAsync(cancelacion).ConfigureAwait(false))
+                    return "El respaldo contiene relaciones inválidas. No se restauró nada.";
             }
+            await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
+            foreach (var tabla in contexto.Model.GetEntityTypes().Select(t => t.GetTableName()).Distinct())
+            {
+                orden.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $nombre";
+                orden.Parameters.Clear();
+                orden.Parameters.AddWithValue("$nombre", tabla!);
+                if (Convert.ToInt64(await orden.ExecuteScalarAsync(cancelacion).ConfigureAwait(false)) != 1)
+                    return "El respaldo no contiene todas las tablas requeridas por esta versión.";
+            }
+            orden.Parameters.Clear();
+            orden.CommandText = "SELECT MigrationId FROM __EFMigrationsHistory";
+            var aplicadas = new HashSet<string>(StringComparer.Ordinal);
+            await using (var lector = await orden.ExecuteReaderAsync(cancelacion).ConfigureAwait(false))
+            {
+                while (await lector.ReadAsync(cancelacion).ConfigureAwait(false))
+                    aplicadas.Add(lector.GetString(0));
+            }
+            if (!aplicadas.SetEquals(contexto.Database.GetMigrations()))
+                return "El respaldo es de otra versión. Debe prepararlo un administrador antes de restaurarlo.";
 
             return null;
         }
@@ -306,7 +333,7 @@ public sealed class ServicioRespaldos : IServicioRespaldos
 
         return Prefijo
             + momento.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
-            + "-" + sufijo + ".db";
+            + "-" + Guid.NewGuid().ToString("N") + "-" + sufijo + ".db";
     }
 
     /// <summary>
@@ -350,11 +377,4 @@ public sealed class ServicioRespaldos : IServicioRespaldos
         }
     }
 
-    private static void BorrarSiExiste(string ruta)
-    {
-        if (File.Exists(ruta))
-        {
-            File.Delete(ruta);
-        }
-    }
 }

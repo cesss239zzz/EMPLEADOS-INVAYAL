@@ -103,7 +103,7 @@
                                       HorizontalOptions="Center" VerticalOptions="Center" />
                             </Border>
                         </Grid>
-                        <Label Text="{Binding Resumen.ColaboradoresActivos}" Style="{StaticResource NumeroMetrica}" />
+                        <Label Text="{Binding Resumen.ColaboradoresRegistrados}" Style="{StaticResource NumeroMetrica}" />
                         <Label Text="{Binding Resumen.DetalleColaboradores}"
                                Style="{StaticResource CuerpoMenor}" />
                     </VerticalStackLayout>

@@ -184,6 +184,13 @@ public sealed class ServicioDocumentos : IServicioDocumentos
         // formulario: seria un dato fantasma que despues genera alertas (CR-10).
         var vencimiento = tipo.RequiereVencimiento ? datos.FechaVencimiento : null;
 
+        if (datos.FechaEmision == default || (tipo.RequiereVencimiento && vencimiento is null))
+        {
+            return ResultadoGuardado.Falla("Indique la fecha de emisión y el vencimiento cuando el tipo lo requiera.");
+        }
+        if ((datos.Descripcion?.Trim().Length ?? 0) > 500)
+            return ResultadoGuardado.Falla("La descripción admite hasta 500 caracteres.");
+
         if (vencimiento is { } vence && vence.Date < datos.FechaEmision.Date)
         {
             return ResultadoGuardado.Falla(
@@ -247,6 +254,7 @@ public sealed class ServicioDocumentos : IServicioDocumentos
             documento.TamanoBytes = bytes.LongLength;
         }
 
+        await using var transaccion = await contexto.Database.BeginTransactionAsync(cancelacion).ConfigureAwait(false);
         try
         {
             await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
@@ -273,8 +281,17 @@ public sealed class ServicioDocumentos : IServicioDocumentos
                 }
             }
 
+            // Una renovación o corrección invalida los avisos de la fecha anterior.
+            await contexto.Avisos
+                .Where(a => a.Tipo == TipoAviso.VencimientoDocumento
+                    && a.Estado == EstadoAviso.Pendiente
+                    && a.ClaveIdempotencia.StartsWith("documento:" + documento.Id + ":")
+                    && (vencimiento == null || a.FechaReferencia != vencimiento))
+                .ExecuteUpdateAsync(cambios => cambios.SetProperty(a => a.Estado, EstadoAviso.Resuelto), cancelacion)
+                .ConfigureAwait(false);
             Anotar(contexto, documento.ColaboradorId, documento.Id, documento.NombreArchivo, accion, detalle);
             await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
+            await transaccion.CommitAsync(cancelacion).ConfigureAwait(false);
         }
         catch (DbUpdateException ex)
         {
@@ -314,6 +331,8 @@ public sealed class ServicioDocumentos : IServicioDocumentos
         var colaboradorId = documento.ColaboradorId;
         var nombre = documento.NombreArchivo;
 
+        await using var transaccion = await contexto.Database.BeginTransactionAsync(cancelacion).ConfigureAwait(false);
+
         // Los avisos que colgaban de este documento dejan de tener sentido.
         await contexto.Avisos
             .Where(a => a.Tipo == TipoAviso.VencimientoDocumento
@@ -328,6 +347,8 @@ public sealed class ServicioDocumentos : IServicioDocumentos
             "Se eliminó el documento del expediente.");
 
         await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
+
+        await transaccion.CommitAsync(cancelacion).ConfigureAwait(false);
 
         _registro.LogWarning("Documento {Id} ({Nombre}) eliminado por {Usuario}.",
             documentoId, nombre, _sesion.NombreUsuario);

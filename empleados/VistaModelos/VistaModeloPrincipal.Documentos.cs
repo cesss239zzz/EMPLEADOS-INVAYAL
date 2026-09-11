@@ -328,9 +328,7 @@ public sealed partial class VistaModeloPrincipal
                     ModoDocumento = false;
                 });
 
-                // El motor vuelve a correr: el vencimiento nuevo debe reflejarse
-                // en Alertas de inmediato (CR-10).
-                _empresaConMotorCorrido = 0;
+                // Resumen y Alertas recalculan sus avisos al abrirse.
                 await AbrirFichaPorIdAsync(colaboradorId).ConfigureAwait(true);
 
                 await Dialogo.AvisarAsync(
@@ -346,6 +344,7 @@ public sealed partial class VistaModeloPrincipal
     [RelayCommand]
     private void CancelarDocumento()
     {
+        if (EstaOcupado) return;
         ModoDocumento = false;
         ErrorDocumento = string.Empty;
     }
@@ -501,7 +500,6 @@ public sealed partial class VistaModeloPrincipal
 
                 EnHiloUi(CerrarVistaPrevia);
 
-                _empresaConMotorCorrido = 0;
                 await AbrirFichaPorIdAsync(documento.ColaboradorId).ConfigureAwait(true);
             },
             "eliminación de documento",

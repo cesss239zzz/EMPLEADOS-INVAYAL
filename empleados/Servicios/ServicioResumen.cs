@@ -31,7 +31,7 @@ public sealed class ServicioResumen : IServicioResumen
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 
         var hoy = DateTime.Today;
-        var limite = hoy.AddDays(ResumenGeneral.DiasDeVentana);
+        var limite = hoy.AddDays(ResumenGeneral.DiasDeVentana + 1);
 
         var activos = await contexto.Colaboradores
             .CountAsync(c => c.Estado == EstadoColaborador.Activo, cancelacion)
@@ -55,7 +55,7 @@ public sealed class ServicioResumen : IServicioResumen
             .CountAsync(
                 d => d.FechaVencimiento != null
                     && d.FechaVencimiento >= hoy
-                    && d.FechaVencimiento <= limite,
+                    && d.FechaVencimiento < limite,
                 cancelacion)
             .ConfigureAwait(false);
 
@@ -64,8 +64,15 @@ public sealed class ServicioResumen : IServicioResumen
                 c => c.Vigente
                     && c.FechaFin != null
                     && c.FechaFin >= hoy
-                    && c.FechaFin <= limite,
+                    && c.FechaFin < limite,
                 cancelacion)
+            .ConfigureAwait(false);
+
+        var documentosVencidos = await contexto.Documentos
+            .CountAsync(d => d.FechaVencimiento != null && d.FechaVencimiento < hoy, cancelacion)
+            .ConfigureAwait(false);
+        var contratosVencidos = await contexto.Contratos
+            .CountAsync(c => c.Vigente && c.FechaFin != null && c.FechaFin < hoy, cancelacion)
             .ConfigureAwait(false);
 
         var proximo = await CalcularProximoCumpleanosAsync(contexto, hoy, cancelacion).ConfigureAwait(false);
@@ -76,7 +83,11 @@ public sealed class ServicioResumen : IServicioResumen
             _contextoEmpresa.NombreEmpresaActiva, activos, cumpleanos, documentos, contratos,
             ResumenGeneral.DiasDeVentana);
 
-        return new ResumenGeneral(activos, registrados, cumpleanos, proximo, documentos, contratos);
+        return new ResumenGeneral(activos, registrados, cumpleanos, proximo, documentos, contratos)
+        {
+            DocumentosVencidos = documentosVencidos,
+            ContratosVencidos = contratosVencidos
+        };
     }
 
     /// <summary>
@@ -101,11 +112,13 @@ public sealed class ServicioResumen : IServicioResumen
             return string.Empty;
         }
 
-        var cuando = (siguiente.Dia - hoy.Day) switch
+        // La misma convención que el motor: 29/02 se celebra el 28 en años no bisiestos.
+        var dia = Math.Min(siguiente.Dia, DateTime.DaysInMonth(hoy.Year, hoy.Month));
+        var cuando = (dia - hoy.Day) switch
         {
             0 => "hoy",
-            1 => "manana",
-            _ => "el " + siguiente.Dia + " de "
+            1 => "mañana",
+            _ => "el " + dia + " de "
                 + CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(hoy.Month).ToLowerInvariant()
         };
 

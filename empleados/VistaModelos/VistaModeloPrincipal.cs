@@ -73,15 +73,10 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     /// </summary>
     private bool _rellenandoFiltros;
 
-    /// <summary>
-    /// Empresa para la que ya corrio el motor de alertas en esta sesion. El
-    /// motor es idempotente, pero escribe: correrlo en cada aparicion de la
-    /// pantalla seria trabajo de base de datos regalado.
-    /// </summary>
-    private int _empresaConMotorCorrido;
-
     /// <summary>Cuantos colaboradores tiene la empresa sin filtrar.</summary>
     private int _totalSinFiltrar;
+    private int _empresaCargada;
+    private int _usuarioCargado;
 
     public VistaModeloPrincipal(
         IServicioColaboradores colaboradores,
@@ -383,6 +378,12 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     {
         EnHiloUi(() =>
         {
+            if (_empresaCargada != _contextoEmpresa.EmpresaActivaId || _usuarioCargado != _sesion.UsuarioId)
+            {
+                LimpiarDatosDeSesion();
+                _empresaCargada = _contextoEmpresa.EmpresaActivaId;
+                _usuarioCargado = _sesion.UsuarioId;
+            }
             EmpresaActiva = _contextoEmpresa.NombreEmpresaActiva;
             ColorEmpresa = _contextoEmpresa.ColorEmpresaActiva;
             Usuario = _sesion.NombreCompleto;
@@ -391,6 +392,35 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         });
 
         await CargarSeccionAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>El Shell puede reutilizar la página: no conserva datos de otra sesión.</summary>
+    private void LimpiarDatosDeSesion()
+    {
+        _cancelacionBusqueda?.Cancel();
+        _cancelacionBusqueda?.Dispose();
+        _cancelacionBusqueda = null;
+        _rellenandoFiltros = true;
+        try
+        {
+            Busqueda = string.Empty;
+            DepartamentoSeleccionado = null;
+            SucursalSeleccionada = null;
+            EstadoSeleccionado = Estados[0];
+            Colaboradores.Clear(); Directorio.Clear(); Avisos.Clear();
+            Departamentos.Clear(); Sucursales.Clear();
+            SucursalesEd.Clear(); DepartamentosEd.Clear(); PuestosEd.Clear();
+            ValoresCatalogo.Clear(); DepartamentosCatalogo.Clear(); TiposDocumentoDoc.Clear(); Respaldos.Clear();
+            ModoEdicion = false; ModoNovedad = false; ModoDocumento = false; ModoFormularioCatalogo = false;
+            InicializarCamposDocumento();
+            CerrarFicha();
+            Resumen = ResumenGeneral.Vacio;
+            AvisosPendientes = 0;
+            _totalSinFiltrar = 0;
+            SeccionActiva = Seccion.Resumen;
+            OnPropertyChanged(nameof(PuedeCapturar));
+        }
+        finally { _rellenandoFiltros = false; }
     }
 
     /// <summary>Cada seccion trae lo suyo cuando se abre (CLAUDE.md, regla 13).</summary>
@@ -522,21 +552,13 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
     }
 
     /// <summary>
-    /// El motor calcula los avisos de la empresa activa. Es idempotente, pero
-    /// escribe: se corre una vez por empresa y por sesion, no en cada aparicion.
+    /// Recalcula al abrir Resumen o Alertas: una sesión puede durar varios días
+    /// y se pueden renovar documentos sin salir. No precarga al arrancar.
     /// </summary>
     private async Task CorrerMotorSiHaceFaltaAsync(CancellationToken cancelacion)
     {
-        if (_empresaConMotorCorrido == _contextoEmpresa.EmpresaActivaId)
-        {
-            return;
-        }
-
         var resultado = await _alertas.GenerarAsync(cancelacion).ConfigureAwait(true);
-        _empresaConMotorCorrido = _contextoEmpresa.EmpresaActivaId;
-
-        Registro.LogInformation(
-            "Motor de alertas corrido al abrir la pantalla: {Generados} nuevos, {Pendientes} pendientes.",
+        Registro.LogInformation("Alertas actualizadas: {Generados} nuevos, {Pendientes} pendientes.",
             resultado.Generados, resultado.Pendientes);
     }
 
@@ -849,9 +871,12 @@ public sealed partial class VistaModeloPrincipal : VistaModeloBase
         => EjecutarSeguroAsync(
             async () =>
             {
+                EnHiloUi(LimpiarDatosDeSesion);
+                _empresaCargada = 0;
+                _usuarioCargado = 0;
                 _sesion.Cerrar();
                 _contextoEmpresa.Limpiar();
-                _empresaConMotorCorrido = 0;
+
                 Registro.LogInformation("Sesión cerrada.");
                 await _navegacion.IrAsync(RutasNavegacion.Acceso).ConfigureAwait(true);
             },

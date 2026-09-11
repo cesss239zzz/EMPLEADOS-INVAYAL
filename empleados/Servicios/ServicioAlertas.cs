@@ -17,15 +17,18 @@ public sealed class ServicioAlertas : IServicioAlertas
     private readonly IDbContextFactory<ContextoRhManager> _fabrica;
     private readonly IContextoEmpresa _contextoEmpresa;
     private readonly ILogger<ServicioAlertas> _registro;
+    private readonly SesionUsuario _sesion;
 
     public ServicioAlertas(
         IDbContextFactory<ContextoRhManager> fabrica,
         IContextoEmpresa contextoEmpresa,
-        ILogger<ServicioAlertas> registro)
+        ILogger<ServicioAlertas> registro,
+        SesionUsuario sesion)
     {
         _fabrica = fabrica;
         _contextoEmpresa = contextoEmpresa;
         _registro = registro;
+        _sesion = sesion;
     }
 
     /// <inheritdoc />
@@ -35,6 +38,7 @@ public sealed class ServicioAlertas : IServicioAlertas
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 
+        await using var transaccion = await contexto.Database.BeginTransactionAsync(cancelacion).ConfigureAwait(false);
         var hoy = DateTime.Today;
         var candidatos = new List<Aviso>();
 
@@ -44,27 +48,31 @@ public sealed class ServicioAlertas : IServicioAlertas
         candidatos.AddRange(await CalcularAniversarios(contexto, hoy, cancelacion).ConfigureAwait(false));
         candidatos.AddRange(await CalcularFinDePeriodoDePrueba(contexto, hoy, cancelacion).ConfigureAwait(false));
 
-        // La idempotencia se resuelve comparando contra las claves ya guardadas.
-        // El indice unico (EmpresaId, ClaveIdempotencia) es la red de seguridad:
-        // aunque dos corridas se solaparan, la base rechazaria el duplicado.
-        var clavesExistentes = await contexto.Avisos
-            .Select(a => a.ClaveIdempotencia)
-            .ToListAsync(cancelacion)
-            .ConfigureAwait(false);
-
-        var yaExistentes = new HashSet<string>(clavesExistentes, StringComparer.Ordinal);
-
-        var nuevos = candidatos
-            .GroupBy(a => a.ClaveIdempotencia, StringComparer.Ordinal)
-            .Select(g => g.First())
-            .Where(a => !yaExistentes.Contains(a.ClaveIdempotencia))
-            .ToList();
-
-        if (nuevos.Count > 0)
+        var actuales = candidatos.GroupBy(a => a.ClaveIdempotencia, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        // Solo se leen pendientes y claves de la corrida actual, no el historial completo.
+        var claves = actuales.Keys.ToArray();
+        var existentes = await contexto.Avisos
+            .Where(a => a.Estado == EstadoAviso.Pendiente || claves.Contains(a.ClaveIdempotencia))
+            .ToListAsync(cancelacion).ConfigureAwait(false);
+        foreach (var aviso in existentes.Where(a => a.Estado == EstadoAviso.Pendiente))
         {
-            contexto.Avisos.AddRange(nuevos);
-            await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
+            if (actuales.TryGetValue(aviso.ClaveIdempotencia, out var actual))
+            {
+                aviso.Titulo = actual.Titulo;
+                aviso.Descripcion = actual.Descripcion;
+            }
+            else
+            {
+                // Renovaciones, escalones superados y efemérides de meses anteriores.
+                aviso.Estado = EstadoAviso.Resuelto;
+            }
         }
+        var yaExistentes = existentes.Select(a => a.ClaveIdempotencia).ToHashSet(StringComparer.Ordinal);
+        var nuevos = actuales.Values.Where(a => !yaExistentes.Contains(a.ClaveIdempotencia)).ToList();
+        contexto.Avisos.AddRange(nuevos);
+        await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
+        await transaccion.CommitAsync(cancelacion).ConfigureAwait(false);
 
         var pendientes = await contexto.Avisos
             .CountAsync(a => a.Estado == EstadoAviso.Pendiente, cancelacion)
@@ -83,12 +91,13 @@ public sealed class ServicioAlertas : IServicioAlertas
     private async Task<List<Aviso>> CalcularVencimientosDeContrato(
         ContextoRhManager contexto, DateTime hoy, CancellationToken cancelacion)
     {
-        var limite = hoy.AddDays(DiasAvisoContrato);
+        var limite = hoy.AddDays(DiasAvisoContrato + 1);
 
         var contratos = await contexto.Contratos
-            .Where(c => c.Vigente && c.FechaFin != null && c.FechaFin <= limite)
+            .Where(c => c.Vigente && c.FechaFin != null && c.FechaFin < limite)
             .Select(c => new
             {
+                c.Id,
                 c.ColaboradorId,
                 c.Numero,
                 Fin = c.FechaFin!.Value,
@@ -100,10 +109,10 @@ public sealed class ServicioAlertas : IServicioAlertas
         return contratos.Select(c => Crear(
             TipoAviso.VencimientoContrato,
             c.ColaboradorId,
-            "Contrato por vencer: " + c.Nombre,
+            (c.Fin.Date < hoy ? "Contrato vencido: " : "Contrato por vencer: ") + c.Nombre,
             "El contrato " + c.Numero + " vence el " + c.Fin.ToString("dd/MM/yyyy") + ".",
             c.Fin,
-            "contrato:" + c.Numero + ":" + c.Fin.ToString("yyyy-MM-dd"))).ToList();
+            "contrato:" + c.Id + ":" + c.Fin.ToString("yyyy-MM-dd"))).ToList();
     }
 
     /// <summary>
@@ -259,7 +268,8 @@ public sealed class ServicioAlertas : IServicioAlertas
         var desde = hoy.AddDays(-DiasPeriodoPrueba);
 
         var personas = await contexto.Colaboradores
-            .Where(c => c.Estado == EstadoColaborador.Activo && c.FechaIngreso >= desde)
+            .Where(c => c.Estado == EstadoColaborador.Activo && c.FechaIngreso >= desde
+                && c.FechaIngreso <= hoy.AddDays(15 - DiasPeriodoPrueba))
             .Select(c => new
             {
                 c.Id,
@@ -349,6 +359,9 @@ public sealed class ServicioAlertas : IServicioAlertas
     public async Task ResolverAsync(int avisoId, CancellationToken cancelacion = default)
     {
         ExigirEmpresaActiva();
+
+        if (!_sesion.PuedeCapturar)
+            throw new InvalidOperationException("Su perfil no permite resolver avisos.");
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 

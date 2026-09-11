@@ -1,3 +1,5 @@
+using System.Net.Mail;
+using Microsoft.Data.Sqlite;
 using empleados.Datos;
 using empleados.Datos.Entidades;
 using Microsoft.EntityFrameworkCore;
@@ -206,6 +208,11 @@ public sealed class ServicioColaboradores : IServicioColaboradores
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 
+        if (!_sesion.PuedeCapturar)
+        {
+            return null;
+        }
+
         // Sin Where por EmpresaId: si el id fuera de otra empresa, el filtro
         // global no lo encuentra. Ese es justamente el aislamiento (regla 9).
         var datos = await contexto.Colaboradores
@@ -261,12 +268,27 @@ public sealed class ServicioColaboradores : IServicioColaboradores
                 "Su perfil no tiene permiso para dar de alta ni editar expedientes.");
         }
 
+        var error = Validar(datos);
+        if (error is not null)
+        {
+            return ResultadoGuardado.Falla(error);
+        }
+
         var codigo = datos.Codigo.Trim();
 
         // Lo opcional vacio viaja como NULO, no como cadena vacia (CR-04).
         var identidad = Nulo(datos.Identidad);
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
+
+        // Las claves foráneas simples no impiden enlazar catálogos de otra
+        // empresa. Se valida su pertenencia usando los filtros globales.
+        if ((datos.SucursalId is { } sucursal && !await contexto.Sucursales.AnyAsync(x => x.Id == sucursal, cancelacion).ConfigureAwait(false))
+            || (datos.DepartamentoId is { } departamento && !await contexto.Departamentos.AnyAsync(x => x.Id == departamento, cancelacion).ConfigureAwait(false))
+            || (datos.PuestoId is { } puesto && !await contexto.Puestos.AnyAsync(x => x.Id == puesto, cancelacion).ConfigureAwait(false)))
+        {
+            return ResultadoGuardado.Falla("La sucursal, departamento o puesto no pertenece a la empresa activa.");
+        }
 
         // Unicidad dentro de la empresa (el filtro global acota a la activa),
         // excluyendo el propio registro al editar. Solo aplica cuando de verdad
@@ -320,10 +342,12 @@ public sealed class ServicioColaboradores : IServicioColaboradores
             colaborador = existente;
         }
 
+        RegistrarMovimientos(contexto, colaborador, datos);
+
         colaborador.Codigo = codigo;
         colaborador.PrimerNombre = datos.PrimerNombre.Trim();
         colaborador.PrimerApellido = datos.PrimerApellido.Trim();
-        colaborador.FechaIngreso = datos.FechaIngreso;
+        colaborador.FechaIngreso = datos.FechaIngreso.Date;
         colaborador.Estado = datos.Estado;
 
         // Todo lo opcional pasa por Nulo(): un campo que el usuario dejo en
@@ -336,7 +360,7 @@ public sealed class ServicioColaboradores : IServicioColaboradores
         colaborador.Telefono = Nulo(datos.Telefono);
         colaborador.Correo = Nulo(datos.Correo);
         colaborador.Direccion = Nulo(datos.Direccion);
-        colaborador.SalarioBase = datos.SalarioBase;
+        colaborador.SalarioBase = datos.SalarioBase is { } salario ? decimal.Round(salario, 2, MidpointRounding.AwayFromZero) : null;
         colaborador.SucursalId = datos.SucursalId;
         colaborador.DepartamentoId = datos.DepartamentoId;
         colaborador.PuestoId = datos.PuestoId;
@@ -356,7 +380,7 @@ public sealed class ServicioColaboradores : IServicioColaboradores
         {
             await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateException ex) when (ex.InnerException is SqliteException { SqliteExtendedErrorCode: 2067 })
         {
             // Respaldo de la validacion de arriba: si dos altas ganan la carrera,
             // el indice unico corta la segunda. Nunca se muestra el ex crudo.
@@ -371,6 +395,79 @@ public sealed class ServicioColaboradores : IServicioColaboradores
             _contextoEmpresa.NombreEmpresaActiva, colaborador.Id);
 
         return ResultadoGuardado.Ok(colaborador.Id);
+    }
+
+    private static string? Validar(DatosEdicionColaborador datos)
+    {
+        if (string.IsNullOrWhiteSpace(datos.Codigo) || string.IsNullOrWhiteSpace(datos.PrimerNombre)
+            || string.IsNullOrWhiteSpace(datos.PrimerApellido))
+            return "El código, primer nombre y primer apellido son obligatorios.";
+        if (datos.Codigo.Trim().Length > 20 || (datos.Identidad?.Trim().Length ?? 0) > 20
+            || datos.PrimerNombre.Trim().Length > 60 || datos.PrimerApellido.Trim().Length > 60
+            || (datos.SegundoNombre?.Trim().Length ?? 0) > 60 || (datos.SegundoApellido?.Trim().Length ?? 0) > 60)
+            return "Revise la longitud del código (20), identidad (20) y nombres o apellidos (60).";
+        if (datos.FechaIngreso == default || datos.FechaIngreso.Date > DateTime.Today)
+            return "La fecha de ingreso debe ser válida y no posterior a hoy.";
+        if (datos.FechaNacimiento is { } nacimiento && (nacimiento == default || nacimiento.Date >= datos.FechaIngreso.Date))
+            return "La fecha de nacimiento debe ser anterior a la de ingreso.";
+        if (!Enum.IsDefined(datos.Estado) || (datos.Sexo is { } sexo && !Enum.IsDefined(sexo)))
+            return "El estado o sexo seleccionado no es válido.";
+        if (datos.SalarioBase is < 0 or > 9999999999.99m)
+            return "El salario debe estar entre 0 y 9,999,999,999.99.";
+        if (!string.IsNullOrWhiteSpace(datos.Correo)
+            && (!MailAddress.TryCreate(datos.Correo.Trim(), out var correo) || correo.Address != datos.Correo.Trim()))
+            return "El correo electrónico no tiene un formato válido.";
+        if (!string.IsNullOrWhiteSpace(datos.Telefono) && !datos.Telefono.Any(char.IsDigit))
+            return "El teléfono debe contener al menos un número.";
+        return null;
+    }
+
+    /// <summary>El expediente y su historial se guardan en el mismo SaveChanges.</summary>
+    private void RegistrarMovimientos(ContextoRhManager contexto, Colaborador colaborador, DatosEdicionColaborador datos)
+    {
+        var salario = datos.SalarioBase is { } importe
+            ? (decimal?)decimal.Round(importe, 2, MidpointRounding.AwayFromZero) : null;
+        void Agregar(TipoMovimiento tipo, string detalle)
+        {
+            contexto.MovimientosLaborales.Add(new MovimientoLaboral
+            {
+                EmpresaId = colaborador.EmpresaId,
+                Colaborador = colaborador,
+                FechaCreacion = DateTime.UtcNow,
+                Fecha = tipo == TipoMovimiento.Ingreso ? datos.FechaIngreso.Date : DateTime.Now,
+                Tipo = tipo,
+                PuestoAnteriorId = datos.EsAlta ? null : colaborador.PuestoId,
+                PuestoNuevoId = datos.PuestoId,
+                SucursalAnteriorId = datos.EsAlta ? null : colaborador.SucursalId,
+                SucursalNuevaId = datos.SucursalId,
+                // Un traslado no debe duplicar la información salarial.
+                SalarioAnterior = tipo == TipoMovimiento.CambioSalario ? colaborador.SalarioBase : null,
+                SalarioNuevo = tipo is TipoMovimiento.CambioSalario or TipoMovimiento.Ingreso ? salario : null,
+                Observacion = detalle + " Registrado por " + _sesion.NombreUsuario + "."
+            });
+        }
+
+        if (datos.EsAlta)
+        {
+            Agregar(TipoMovimiento.Ingreso, "Apertura del expediente.");
+            return;
+        }
+        if (colaborador.PuestoId != datos.PuestoId)
+            Agregar(TipoMovimiento.CambioPuesto, "Cambio de puesto.");
+        if (colaborador.SucursalId != datos.SucursalId)
+            Agregar(TipoMovimiento.TrasladoSucursal, "Cambio de sucursal.");
+        if (colaborador.SalarioBase != salario)
+            Agregar(TipoMovimiento.CambioSalario, "Actualización del salario base.");
+        if (colaborador.Estado != datos.Estado)
+        {
+            var tipo = datos.Estado switch
+            {
+                EstadoColaborador.Inactivo => TipoMovimiento.Salida,
+                EstadoColaborador.Suspendido => TipoMovimiento.Suspension,
+                _ => TipoMovimiento.Reingreso
+            };
+            Agregar(tipo, "Estado: " + colaborador.Estado + " → " + datos.Estado + ".");
+        }
     }
 
     /// <summary>

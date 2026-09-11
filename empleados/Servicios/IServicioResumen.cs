@@ -19,11 +19,15 @@ public sealed record ResumenGeneral(
     int DocumentosPorVencer,
     int ContratosPorVencer)
 {
+    public int DocumentosVencidos { get; init; }
+    public int ContratosVencidos { get; init; }
+
     /// <summary>Ventana de aviso de las dos tarjetas de vencimiento.</summary>
     public const int DiasDeVentana = 30;
 
     /// <summary>Pie de la tarjeta de colaboradores.</summary>
     public string DetalleColaboradores =>
+        ColaboradoresRegistrados == 0 ? "Sin expedientes registrados" :
         ColaboradoresActivos == ColaboradoresRegistrados
             ? "Todos los expedientes activos"
             : ColaboradoresActivos + " activos de " + ColaboradoresRegistrados + " expedientes";
@@ -34,18 +38,21 @@ public sealed record ResumenGeneral(
         : "Próximo: " + ProximoCumpleanos;
 
     /// <summary>Verdadero cuando la tarjeta de documentos debe encenderse en ambar.</summary>
-    public bool HayDocumentosPorVencer => DocumentosPorVencer > 0;
+    public bool HayDocumentosPorVencer => DocumentosPorVencer > 0 || DocumentosVencidos > 0;
 
     /// <summary>Verdadero cuando la tarjeta de contratos debe encenderse en rojo.</summary>
-    public bool HayContratosPorVencer => ContratosPorVencer > 0;
+    public bool HayContratosPorVencer => ContratosPorVencer > 0 || ContratosVencidos > 0;
 
     /// <summary>Pie de la tarjeta de contratos.</summary>
-    public string DetalleContratos => HayContratosPorVencer
-        ? "Requiere acción inmediata"
+    public string DetalleContratos => ContratosVencidos > 0
+        ? ContratosVencidos + " vencidos sin cerrar · requieren atención"
+        : ContratosPorVencer > 0 ? "Vencen en los próximos " + DiasDeVentana + " días"
         : "Sin vencimientos próximos";
 
-    /// <summary>Pie de la tarjeta de documentos.</summary>
-    public string DetalleDocumentos => "(Próximos " + DiasDeVentana + " días)";
+    /// <summary>No oculta documentos vencidos cuando el contador próximo es cero.</summary>
+    public string DetalleDocumentos => DocumentosVencidos > 0
+        ? DocumentosVencidos + " vencidos · " + DocumentosPorVencer + " por vencer"
+        : "(Próximos " + DiasDeVentana + " días)";
 
     /// <summary>Resumen vacio, para la pantalla antes de la primera consulta.</summary>
     public static ResumenGeneral Vacio { get; } = new(0, 0, 0, string.Empty, 0, 0);

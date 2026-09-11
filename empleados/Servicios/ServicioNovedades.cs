@@ -42,6 +42,11 @@ public sealed class ServicioNovedades : IServicioNovedades
             return ResultadoGuardado.Falla("El título de la incidencia es obligatorio.");
         }
 
+        if (!Enum.IsDefined(datos.Tipo) || datos.Fecha == default || datos.Fecha.Date > DateTime.Today)
+            return ResultadoGuardado.Falla("Seleccione un tipo y una fecha de incidencia válidos, no futura.");
+        if (datos.Titulo.Trim().Length > 160 || (datos.Descripcion?.Length ?? 0) > 1000)
+            return ResultadoGuardado.Falla("El título admite 160 caracteres y la descripción 1000.");
+
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 
         // El colaborador debe existir en la empresa activa; el filtro global se
@@ -61,7 +66,7 @@ public sealed class ServicioNovedades : IServicioNovedades
             Tipo = datos.Tipo,
             Fecha = datos.Fecha,
             Titulo = datos.Titulo.Trim(),
-            Descripcion = datos.Descripcion.Trim(),
+            Descripcion = datos.Descripcion?.Trim() ?? string.Empty,
             RegistradaPorUsuarioId = _sesion.UsuarioId
         };
 
@@ -87,19 +92,30 @@ public sealed class ServicioNovedades : IServicioNovedades
             return ResultadoGuardado.Falla("Su perfil no tiene permiso para programar vacaciones.");
         }
 
-        if (datos.FechaFin.Date < datos.FechaInicio.Date)
-        {
-            return ResultadoGuardado.Falla("La fecha de fin no puede ser anterior a la de inicio.");
-        }
+        if (datos.FechaInicio == default || datos.FechaFin == default || datos.FechaFin.Date < datos.FechaInicio.Date)
+            return ResultadoGuardado.Falla("Seleccione un período válido: el fin no puede ser anterior al inicio.");
+        if ((datos.Observacion?.Length ?? 0) > 1000)
+            return ResultadoGuardado.Falla("La observación admite hasta 1000 caracteres.");
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
-
-        var existe = await contexto.Colaboradores
-            .AnyAsync(c => c.Id == datos.ColaboradorId, cancelacion).ConfigureAwait(false);
-        if (!existe)
-        {
+        // La comprobación de cruces y el INSERT forman una única transacción.
+        await using var transaccion = await contexto.Database.BeginTransactionAsync(cancelacion).ConfigureAwait(false);
+        var persona = await contexto.Colaboradores
+            .Where(c => c.Id == datos.ColaboradorId)
+            .Select(c => new { c.Estado, c.FechaIngreso })
+            .FirstOrDefaultAsync(cancelacion).ConfigureAwait(false);
+        if (persona is null)
             return ResultadoGuardado.Falla("El colaborador no está disponible en la empresa activa.");
-        }
+        if (persona.Estado != EstadoColaborador.Activo)
+            return ResultadoGuardado.Falla("Solo se pueden programar vacaciones para colaboradores activos.");
+        if (datos.FechaInicio.Date < persona.FechaIngreso.Date)
+            return ResultadoGuardado.Falla("Las vacaciones no pueden empezar antes del ingreso.");
+        var inicio = datos.FechaInicio.Date;
+        var fin = datos.FechaFin.Date;
+        if (await contexto.Vacaciones.AnyAsync(v => v.ColaboradorId == datos.ColaboradorId
+                && v.Estado != EstadoVacacion.Cancelada
+                && v.FechaInicio <= fin && v.FechaFin >= inicio, cancelacion).ConfigureAwait(false))
+            return ResultadoGuardado.Falla("El período se cruza con vacaciones ya registradas para este colaborador.");
 
         // Dias calendario, extremos incluidos: se guardan para no recalcular en
         // cada lectura.
@@ -114,12 +130,13 @@ public sealed class ServicioNovedades : IServicioNovedades
             FechaFin = datos.FechaFin.Date,
             Dias = dias,
             Estado = EstadoVacacion.Programada,
-            Observacion = datos.Observacion.Trim(),
+            Observacion = datos.Observacion?.Trim() ?? string.Empty,
             RegistradaPorUsuarioId = _sesion.UsuarioId
         };
 
         contexto.Vacaciones.Add(vacacion);
         await contexto.SaveChangesAsync(cancelacion).ConfigureAwait(false);
+        await transaccion.CommitAsync(cancelacion).ConfigureAwait(false);
 
         _registro.LogInformation(
             "Vacaciones programadas para colaborador {Colaborador} ({Dias} días, id {Id}).",
