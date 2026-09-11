@@ -77,10 +77,14 @@ public sealed class ServicioEmpresas : IServicioEmpresas
                 e.ColorPrimario,
                 Colaboradores = contexto.Colaboradores
                     .IgnoreQueryFilters()
-                    .Count(c => c.EmpresaId == e.Id && c.Estado == EstadoColaborador.Activo),
+                    .Count(c => c.EmpresaId == e.Id && c.Estado == EstadoColaborador.Activo
+                        && (_sesion.Perfil != PerfilUsuario.SupervisorSucursal
+                            || (_sesion.SucursalId != null && c.SucursalId == _sesion.SucursalId))),
                 Sucursales = contexto.Sucursales
                     .IgnoreQueryFilters()
-                    .Count(s => s.EmpresaId == e.Id && s.Activa)
+                    .Count(s => s.EmpresaId == e.Id && s.Activa
+                        && (_sesion.Perfil != PerfilUsuario.SupervisorSucursal
+                            || (_sesion.SucursalId != null && s.Id == _sesion.SucursalId)))
             })
             .ToListAsync(cancelacion)
             .ConfigureAwait(false);
@@ -273,6 +277,9 @@ public sealed class ServicioEmpresas : IServicioEmpresas
             throw new InvalidOperationException("No se puede consultar una empresa sin sesión iniciada.");
         }
 
+        if (_sesion.Perfil != PerfilUsuario.SuperAdministrador)
+            return null;
+
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);
 
         var empresa = await contexto.Empresas
@@ -350,6 +357,8 @@ public sealed class ServicioEmpresas : IServicioEmpresas
 
         try
         {
+            await contexto.MovimientosDocumento.IgnoreQueryFilters()
+                .Where(x => x.EmpresaId == empresaId).ExecuteDeleteAsync(cancelacion).ConfigureAwait(false);
             await contexto.Avisos.IgnoreQueryFilters()
                 .Where(x => x.EmpresaId == empresaId).ExecuteDeleteAsync(cancelacion).ConfigureAwait(false);
             await contexto.Documentos.IgnoreQueryFilters()

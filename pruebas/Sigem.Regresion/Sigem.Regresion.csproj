@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Mismas versiones que la aplicación. Sin MAUI ni framework de tests adicional. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.19" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <Compile Include="../../empleados/Datos/Entidades/*.cs" Link="Datos/Entidades/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Datos/ContextoRhManager.cs;../../empleados/Datos/ContextoEmpresa.cs;../../empleados/Datos/IContextoEmpresa.cs;../../empleados/Datos/SiembraSistema.cs;../../empleados/Datos/TextoBusqueda.cs" Link="Datos/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Datos/Migraciones/*.cs" Link="Datos/Migraciones/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Servicios/SesionUsuario.cs;../../empleados/Servicios/ServicioColaboradores.cs;../../empleados/Servicios/ServicioFicha.cs;../../empleados/Servicios/ServicioNovedades.cs;../../empleados/Servicios/ServicioDocumentos.cs;../../empleados/Servicios/ServicioResumen.cs;../../empleados/Servicios/ServicioAlertas.cs;../../empleados/Servicios/ServicioAutenticacion.cs;../../empleados/Servicios/ServicioCatalogos.cs" Link="Servicios/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Servicios/IServicioColaboradores.cs;../../empleados/Servicios/IServicioFicha.cs;../../empleados/Servicios/IServicioNovedades.cs;../../empleados/Servicios/IServicioDocumentos.cs;../../empleados/Servicios/IServicioResumen.cs;../../empleados/Servicios/IServicioAlertas.cs;../../empleados/Servicios/IServicioAutenticacion.cs;../../empleados/Servicios/IServicioCatalogos.cs" Link="Servicios/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Configuracion/*.cs" Link="Configuracion/%(Filename)%(Extension)" />
+    <Compile Include="../../empleados/Servicios/ServicioRespaldos.cs;../../empleados/Servicios/IServicioRespaldos.cs;../../empleados/Servicios/ServicioEmpresas.cs;../../empleados/Servicios/IServicioEmpresas.cs;../../empleados/Servicios/ServicioDiagnostico.cs;../../empleados/Servicios/IServicioDiagnostico.cs;../../empleados/Servicios/ResultadoDiagnostico.cs" Link="Servicios/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

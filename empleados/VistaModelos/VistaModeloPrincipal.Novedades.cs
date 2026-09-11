@@ -240,6 +240,7 @@ public sealed partial class VistaModeloPrincipal
     [RelayCommand]
     private void CancelarNovedad()
     {
+        if (EstaOcupado) return;
         ModoNovedad = false;
         ErrorNovedad = string.Empty;
     }

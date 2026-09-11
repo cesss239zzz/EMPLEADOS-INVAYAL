@@ -355,9 +355,10 @@ public sealed class ServicioCatalogos : IServicioCatalogos
             return ResultadoGuardado.Falla("El nombre es obligatorio.");
         }
 
-        if (nombre.Length > 120)
+        var maximoNombre = datos.Tipo is TipoCatalogo.TipoDocumento or TipoCatalogo.TipoContrato ? 80 : 120;
+        if (nombre.Length > maximoNombre)
         {
-            return ResultadoGuardado.Falla("El nombre no puede pasar de 120 caracteres.");
+            return ResultadoGuardado.Falla("El nombre no puede pasar de " + maximoNombre + " caracteres.");
         }
 
         await using var contexto = await _fabrica.CreateDbContextAsync(cancelacion).ConfigureAwait(false);

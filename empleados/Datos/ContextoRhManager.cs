@@ -1,4 +1,5 @@
 using empleados.Datos.Entidades;
+using empleados.Servicios;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -14,12 +15,20 @@ namespace empleados.Datos;
 /// </summary>
 public class ContextoRhManager : DbContext
 {
-    private readonly IContextoEmpresa _contextoEmpresa;
+    private readonly int _empresaId;
+    private readonly bool _autenticado;
+    private readonly bool _limitarSucursal;
+    private readonly int? _sucursalId;
 
-    public ContextoRhManager(DbContextOptions<ContextoRhManager> opciones, IContextoEmpresa contextoEmpresa)
+    public ContextoRhManager(DbContextOptions<ContextoRhManager> opciones, IContextoEmpresa contextoEmpresa, SesionUsuario sesion)
         : base(opciones)
     {
-        _contextoEmpresa = contextoEmpresa;
+        // Cada operación conserva su empresa y alcance aunque cambie la sesión
+        // mientras espera una consulta. La fábrica crea el siguiente contexto.
+        _empresaId = contextoEmpresa.EmpresaActivaId;
+        _autenticado = sesion.EstaAutenticado;
+        _limitarSucursal = sesion.Perfil == PerfilUsuario.SupervisorSucursal;
+        _sucursalId = sesion.SucursalId;
     }
 
     public DbSet<Empresa> Empresas => Set<Empresa>();
@@ -269,36 +278,48 @@ public class ContextoRhManager : DbContext
     }
 
     /// <summary>
-    /// Filtro global por empresa. Es la unica frontera de aislamiento entre
-    /// empresas y es un control de seguridad, no una comodidad: por eso esta
-    /// aca y no repartido en Where sueltos por los repositorios.
-    ///
-    /// La expresion lee <c>_contextoEmpresa</c>, que es un campo de esta
-    /// instancia, asi que EF lo trata como parametro y lo reevalua en cada
-    /// consulta. Si se capturara el valor al construir el modelo, cambiar de
-    /// empresa dejaria de tener efecto.
+    /// Aislamiento central por empresa y sucursal, también al consultar hijos
+    /// directamente. Sin sesión o sin sucursal asignada al supervisor no hay datos.
+    /// Las expresiones usan campos del contexto, parametrizados por EF.
     /// </summary>
     private void AplicarFiltrosDeEmpresa(ModelBuilder constructor)
     {
-        Filtrar<Sucursal>(constructor);
         Filtrar<Departamento>(constructor);
         Filtrar<Puesto>(constructor);
         Filtrar<TipoContrato>(constructor);
         Filtrar<TipoDocumento>(constructor);
-        Filtrar<Colaborador>(constructor);
-        Filtrar<ContactoEmergencia>(constructor);
-        Filtrar<MovimientoLaboral>(constructor);
-        Filtrar<Contrato>(constructor);
-        Filtrar<DocumentoDigitalizado>(constructor);
-        Filtrar<ContenidoDocumento>(constructor);
-        Filtrar<MovimientoDocumento>(constructor);
-        Filtrar<Incidencia>(constructor);
-        Filtrar<Vacacion>(constructor);
-        Filtrar<Aviso>(constructor);
+
+        constructor.Entity<Sucursal>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId
+            && (!_limitarSucursal || (_sucursalId != null && x.Id == _sucursalId)));
+        constructor.Entity<Colaborador>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId
+            && (!_limitarSucursal || (_sucursalId != null && x.SucursalId == _sucursalId)));
+
+        FiltrarExpediente<ContactoEmergencia>(constructor);
+        FiltrarExpediente<MovimientoLaboral>(constructor);
+        FiltrarExpediente<Contrato>(constructor);
+        FiltrarExpediente<DocumentoDigitalizado>(constructor);
+        FiltrarExpediente<MovimientoDocumento>(constructor);
+        FiltrarExpediente<Incidencia>(constructor);
+        FiltrarExpediente<Vacacion>(constructor);
+
+        constructor.Entity<ContenidoDocumento>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId
+            && Documentos.Any(d => d.Id == x.DocumentoId));
+        constructor.Entity<Aviso>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId
+            && (!_limitarSucursal || Colaboradores.Any(c => c.Id == x.ColaboradorId)));
     }
 
     private void Filtrar<T>(ModelBuilder constructor) where T : EntidadEmpresa
-        => constructor.Entity<T>().HasQueryFilter(fila => fila.EmpresaId == _contextoEmpresa.EmpresaActivaId);
+        => constructor.Entity<T>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId);
+
+    private void FiltrarExpediente<T>(ModelBuilder constructor) where T : EntidadEmpresa
+        => constructor.Entity<T>().HasQueryFilter(x =>
+            _autenticado && _empresaId > 0 && x.EmpresaId == _empresaId
+            && Colaboradores.Any(c => c.Id == EF.Property<int>(x, "ColaboradorId")));
 
     /// <summary>
     /// Lo unico que cambia entre SQLite y MySQL. Al volver a MySQL despues de la

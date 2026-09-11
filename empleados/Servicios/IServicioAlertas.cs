@@ -31,11 +31,16 @@ public sealed record LineaAviso(
     public int DiasRestantes => (int)(FechaReferencia.Date - DateTime.Today).TotalDays;
 
     /// <summary>Prioridad: lo vencido es critico, lo proximo es advertencia.</summary>
-    public bool EsCritico => DiasRestantes < 0;
+    private bool EsVencimiento => Tipo is TipoAviso.VencimientoContrato
+        or TipoAviso.VencimientoDocumento or TipoAviso.FinPeriodoPrueba;
 
-    public bool EsAdvertencia => DiasRestantes is >= 0 and <= 15;
+    public bool EsCritico => EsVencimiento && DiasRestantes < 0;
 
-    public string PlazoTexto => DiasRestantes switch
+    public bool EsAdvertencia => EsVencimiento && DiasRestantes is >= 0 and <= 15;
+
+    public string PlazoTexto => !EsVencimiento && DiasRestantes < 0
+        ? "Fue hace " + Math.Abs(DiasRestantes) + " días"
+        : DiasRestantes switch
     {
         < 0 => "Vencido hace " + Math.Abs(DiasRestantes) + " días",
         0 => "Es hoy",

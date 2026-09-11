@@ -77,11 +77,11 @@ public sealed class ServicioDiagnostico : IServicioDiagnostico
             return new ResultadoDiagnostico(
                 EstadoDiagnostico.MigracionFallida,
                 "No se pudo preparar la base de datos",
-                "RH Manager no logróabrir o actualizar su base de datos local.",
-                "Cierre la aplicación y vuelva a abrirla." + Environment.NewLine + Environment.NewLine
-                    + "Si el problema sigue, borre el archivo de base y deje que se cree de nuevo:"
-                    + Environment.NewLine + RutasRhManager.ArchivoBaseDatos + Environment.NewLine + Environment.NewLine
-                    + "Se perderian los datos de la demostración, que se vuelven a sembrar solos.",
+                "RH Manager no logró abrir o actualizar su base de datos local.",
+                "Cierre la aplicación y conserve la base de datos y sus respaldos."
+                    + Environment.NewLine + Environment.NewLine
+                    + "No borre la base: contiene los expedientes y documentos adjuntos. "
+                    + "Comparta el registro de diagnóstico con el administrador para recuperar el acceso.",
                 ex.ToString());
         }
     }

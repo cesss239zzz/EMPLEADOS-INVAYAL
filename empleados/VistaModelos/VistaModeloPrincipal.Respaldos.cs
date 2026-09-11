@@ -100,6 +100,12 @@ public sealed partial class VistaModeloPrincipal
     /// <summary>Trae la lista de respaldos. La llama CargarSeccionAsync.</summary>
     private async Task CargarRespaldosAsync(CancellationToken cancelacion)
     {
+        if (!_sesion.PuedeElegirEmpresa)
+        {
+            await Dialogo.AvisarAsync("Acceso restringido", "Los respaldos contienen todas las empresas. Solo el SuperAdministrador puede abrir este apartado.").ConfigureAwait(true);
+            EnHiloUi(() => SubseccionActiva = SubseccionConfiguracion.Catalogos);
+            return;
+        }
         var lista = await _respaldos.ListarAsync(cancelacion).ConfigureAwait(true);
 
         cancelacion.ThrowIfCancellationRequested();
@@ -233,6 +239,11 @@ public sealed partial class VistaModeloPrincipal
         => EjecutarSeguroAsync(
             async () =>
             {
+                if (!_sesion.PuedeElegirEmpresa)
+                {
+                    await Dialogo.AvisarAsync("Acceso restringido", "Solo el SuperAdministrador puede abrir los respaldos.").ConfigureAwait(true);
+                    return;
+                }
                 Directory.CreateDirectory(_respaldos.Carpeta);
                 await Launcher.Default.OpenAsync(new OpenFileRequest
                 {

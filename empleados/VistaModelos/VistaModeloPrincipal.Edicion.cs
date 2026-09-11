@@ -289,6 +289,7 @@ public sealed partial class VistaModeloPrincipal
     [RelayCommand]
     private void CancelarEdicion()
     {
+        if (EstaOcupado) return;
         ModoEdicion = false;
         ErrorEdicion = string.Empty;
         VolverAEdicionPendiente = false;

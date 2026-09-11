@@ -27,17 +27,17 @@ public sealed class SesionUsuario
     /// para no traerlo siquiera de la base.
     /// </summary>
     public bool PuedeVerSalarios =>
-        Perfil is PerfilUsuario.SuperAdministrador or PerfilUsuario.Administrador;
+        EstaAutenticado && Perfil is (PerfilUsuario.SuperAdministrador or PerfilUsuario.Administrador);
 
     /// <summary>Solo el SuperAdministrador cambia de empresa libremente.</summary>
-    public bool PuedeElegirEmpresa => Perfil is PerfilUsuario.SuperAdministrador;
+    public bool PuedeElegirEmpresa => EstaAutenticado && Perfil is PerfilUsuario.SuperAdministrador;
 
     /// <summary>
     /// El alta y la edicion de expedientes quedan para Administrador o superior.
     /// Los perfiles de Supervisor y Consulta trabajan en modo lectura.
     /// </summary>
     public bool PuedeCapturar =>
-        Perfil is PerfilUsuario.SuperAdministrador or PerfilUsuario.Administrador;
+        EstaAutenticado && Perfil is (PerfilUsuario.SuperAdministrador or PerfilUsuario.Administrador);
 
     public void Iniciar(Usuario usuario)
     {

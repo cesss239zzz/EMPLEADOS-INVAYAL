@@ -21,6 +21,6 @@ public sealed class FabricaContextoDiseno : IDesignTimeDbContextFactory<Contexto
         // En diseño no hay sesion, asi que no hay empresa activa. El filtro
         // global queda en 0 y no devuelve filas, cosa que a la generacion de
         // migraciones le da igual: solo le interesa la forma del modelo.
-        return new ContextoRhManager(opciones, new ContextoEmpresa());
+        return new ContextoRhManager(opciones, new ContextoEmpresa(), new empleados.Servicios.SesionUsuario());
     }
 }
